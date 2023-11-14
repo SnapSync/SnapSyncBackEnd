@@ -1,0 +1,57 @@
+{
+  "errors": {
+    "device_not_set": "Ops! Device not set",
+    "data_is_empty": "Ops! Data is empty",
+
+    "max_user_devices": "Ops! You have reached the maximum number of devices",
+
+    "device_not_found": "Ops! Device not found",
+    "auth_user_not_found": "Ops! AuthUser not found",
+    "user_not_found": "Ops! User not found",
+    "country_not_found": "Ops! Country not found",
+
+    "user_banned": "Ops! This account has been banned",
+
+    "invalid_authentication_token": "Wrong authentication token",
+    "authentication_token_missing": "Authentication token missing",
+    "expired_authentication_token": "Authentication token expired",
+
+    "invalid_credentials": "Invalid credentials",
+    "invalid_opt": "Ops! The code is invalid",
+
+    "invalid_query_params": "Invalid query params",
+
+    "something_went_wrong": "Ops! Something went wrong",
+
+    "validation_error": "{{errorsLength}} errors occurred",
+
+    "validation": {
+      "required": "{{field}} is required",
+      "minLenght": "{{field}} must be at least {{min}} characters long",
+      "maxLenght": "{{field}} must be at most {{max}} characters long",
+      "regex": "{{field}} is invalid",
+      "oneOf": "{{field}} must be one of the following values: {{allowedValues}}",
+
+      "min": "{{field}} must be greater than or equal to {{min}}",
+      "max": "{{field}} must be less than or equal to {{max}}",
+
+      "invalid_fullname": "Invalid fullname",
+      "invalid_date_of_birth": "Invalid date of birth",
+      "invalid_username": "Invalid username",
+      "username_already_exists": "Ops! This username is already taken",
+      "phone_number_already_exists": "Ops! One account is already associated with this phone number",
+
+      "min_age": "You must be at least {{minAge}} years old"
+    }
+  },
+
+  "models": {},
+
+  "fields": {
+    "fullname": "Fullname",
+    "yearOfBirth": "Year of birth",
+    "monthOfBirth": "Month of birth",
+    "dayOfBirth": "Day of birth",
+    "username": "Username"
+  }
+}

@@ -1,3 +1,5 @@
+import { Request } from 'express';
+
 /**
  * @method isEmpty
  * @param {String | Number | Object} value
@@ -16,4 +18,36 @@ export const isEmpty = (value: string | number | object): boolean => {
   } else {
     return false;
   }
+};
+
+export const retrivePaginationParamFromRequest = (
+  req: Request,
+): {
+  page: number;
+  size: number;
+} => {
+  var p = 0;
+  var s = 30;
+
+  const qPage = req.query && req.query.page ? req.query.page : null;
+  const qSize = req.query.size ? req.query.size : null;
+
+  // Verifico se qPage esiste e se è un numero e se è maggiore di 0
+  if (typeof qPage === 'string' && !isNaN(Number(qPage)) && Number(qPage) > 0) {
+    p = Number(qPage);
+  }
+
+  // Verifico se qSize esiste e se è un numero e se è maggiore di 0
+  if (typeof qSize === 'string' && !isNaN(Number(qSize)) && Number(qSize) > 0) {
+    s = Number(qSize);
+  }
+
+  return {
+    page: p,
+    size: s,
+  };
+};
+
+export const isLeapYear = (year: number): boolean => {
+  return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
 };

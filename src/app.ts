@@ -13,6 +13,25 @@ import knex from '@databases';
 import { Routes } from '@interfaces/routes.interface';
 import errorMiddleware from '@middlewares/error.middleware';
 import { logger, stream } from '@utils/logger';
+import { join } from 'path';
+import i18n from 'i18next';
+import FsBackend, { FsBackendOptions } from 'i18next-fs-backend';
+import * as i18nextMiddleware from 'i18next-http-middleware';
+
+i18n
+  .use(FsBackend)
+  .use(i18nextMiddleware.LanguageDetector)
+  .init<FsBackendOptions>({
+    // debug: true,
+    initImmediate: false,
+    fallbackLng: 'en',
+    lng: 'en',
+    preload: ['en'],
+    supportedLngs: ['en'],
+    backend: {
+      loadPath: join(__dirname, './locales/{{lng}}/{{ns}}.json'),
+    },
+  });
 
 class App {
   public app: express.Application;
@@ -57,6 +76,7 @@ class App {
     this.app.use(express.json());
     this.app.use(express.urlencoded({ extended: true }));
     this.app.use(cookieParser());
+    this.app.use(i18nextMiddleware.handle(i18n));
   }
 
   private initializeRoutes(routes: Routes[]) {
