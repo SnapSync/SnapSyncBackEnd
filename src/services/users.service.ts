@@ -5,6 +5,7 @@ import { boolean } from 'boolean';
 import AwsService from './aws.service';
 import FriendService from './friends.service';
 import { BlockedUsers } from '@/models/blocked_users.model';
+import { SnapSyncErrorType } from '@/utils/enum';
 class UserService {
   public async findAllUser(): Promise<User[]> {
     const findAllUsers: User[] = await Users.query().whereNotDeleted();
@@ -13,28 +14,27 @@ class UserService {
 
   public async findUserById(userId: number): Promise<User> {
     const findOne = await Users.query().whereNotDeleted().findById(userId);
-    if (!findOne) throw new HttpException(404, 'User not found');
+    if (!findOne) new HttpException(404, 'errors.user_not_found', 'User not found', undefined, SnapSyncErrorType.HttpNotFoundError);
 
     return findOne;
   }
 
   public async findUserByPhoneNumber(phoneNumber: string): Promise<User> {
     const findOne = await Users.query().whereNotDeleted().andWhere('phoneNumber', phoneNumber).first();
-    if (!findOne) throw new HttpException(404, 'User not found');
-
+    if (!findOne) new HttpException(404, 'errors.user_not_found', 'User not found', undefined, SnapSyncErrorType.HttpNotFoundError);
     return findOne;
   }
 
-  public async findUserByUsername (username: string): Promise<User> {
+  public async findUserByUsername(username: string): Promise<User> {
     const findOne = await Users.query().whereNotDeleted().andWhere('username', username).first();
-    if (!findOne) throw new HttpException(404, 'User not found');
+    if (!findOne) new HttpException(404, 'errors.user_not_found', 'User not found', undefined, SnapSyncErrorType.HttpNotFoundError);
 
     return findOne;
   }
 
   public async findApiUserById(userId: number): Promise<ApiUser> {
     const findOne = await Users.query().whereNotDeleted().findById(userId);
-    if (!findOne) throw new HttpException(404, 'User not found');
+    if (!findOne) new HttpException(404, 'errors.user_not_found', 'User not found', undefined, SnapSyncErrorType.HttpNotFoundError);
 
     const profilePictureUrl = await new AwsService().getSignedUrl(findOne.profilePicImageKey);
 
@@ -51,7 +51,7 @@ class UserService {
 
   public async findUserBiographyById(userId: number, loggedUserId: number): Promise<Biography | null> {
     const findOneUserData = await Users.query().whereNotDeleted().findById(userId);
-    if (!findOneUserData) throw new HttpException(404, "User doesn't exist");
+    if (!findOneUserData) new HttpException(404, 'errors.user_not_found', 'User not found', undefined, SnapSyncErrorType.HttpNotFoundError);
 
     if (findOneUserData.biography) {
       const words = findOneUserData.biography.split(' ');
@@ -96,10 +96,10 @@ class UserService {
 
   public async findUserProfileById(userId: number, loggedUserId: number): Promise<UserProfile> {
     const findUser = await Users.query().whereNotDeleted().findById(userId);
-    if (!findUser) throw new HttpException(404, 'User not found'); // L'utente non esiste
+    if (!findUser) new HttpException(404, 'errors.user_not_found', 'User not found', undefined, SnapSyncErrorType.HttpNotFoundError); // L'utente non esiste
 
     const findLoggedUser = await Users.query().whereNotDeleted().findById(loggedUserId);
-    if (!findLoggedUser) throw new HttpException(404, 'Logged user not found'); // L'utente loggato non esiste
+    if (!findLoggedUser) new HttpException(404, 'errors.user_not_found', 'User not found', undefined, SnapSyncErrorType.HttpNotFoundError); // L'utente loggato non esiste
 
     const profilePictureUrl = await new AwsService().getSignedUrl(findUser.profilePicImageKey);
 
@@ -132,8 +132,8 @@ class UserService {
 
       snapsCount: 0,
 
-      isMyProfile: isMyProfile
-    }
+      isMyProfile: isMyProfile,
+    };
 
     return up;
   }

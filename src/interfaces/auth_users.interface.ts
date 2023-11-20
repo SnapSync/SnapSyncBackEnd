@@ -9,6 +9,7 @@ export interface AuthUser {
   isPhoneNumberVerified: boolean;
 
   dateOfBirth: Date | null;
+  otpSendedAt: Date | null;
 
   createdAt: Date;
   updatedAt: Date;

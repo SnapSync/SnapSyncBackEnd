@@ -19,6 +19,7 @@ export class AuthUsers extends softDelete(Model) implements AuthUser {
   phoneNumber!: string | null;
   isPhoneNumberVerified!: boolean;
   dateOfBirth!: Date | null;
+  otpSendedAt!: Date | null;
 
   createdAt!: Date;
   updatedAt!: Date;

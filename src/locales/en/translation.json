@@ -9,6 +9,7 @@
     "auth_user_not_found": "Ops! AuthUser not found",
     "user_not_found": "Ops! User not found",
     "country_not_found": "Ops! Country not found",
+    "auth_token_not_found": "Ops! AuthToken not found",
 
     "user_banned": "Ops! This account has been banned",
 
@@ -16,8 +17,10 @@
     "authentication_token_missing": "Authentication token missing",
     "expired_authentication_token": "Authentication token expired",
 
+    "invalid_auth_token": "This token is not valid",
+
     "invalid_credentials": "Invalid credentials",
-    "invalid_opt": "Ops! The code is invalid",
+    "invalid_otp": "Ops! The code is invalid",
 
     "invalid_query_params": "Invalid query params",
 
@@ -52,6 +55,7 @@
     "yearOfBirth": "Year of birth",
     "monthOfBirth": "Month of birth",
     "dayOfBirth": "Day of birth",
-    "username": "Username"
+    "username": "Username",
+    "authToken": "Token"
   }
 }

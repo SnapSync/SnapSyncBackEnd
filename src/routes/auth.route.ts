@@ -26,7 +26,8 @@ class AuthRoute implements Routes {
 
     this.router.post(`${this.path}/login/:userId`, this.authController.login);
 
-    // // this.router.post(`${this.path}/signup`, this.authController.signUp);
+    this.router.post(`${this.path}/auth_token`, deviceMiddleware, this.authController.authToken);
+    // this.router.post(`${this.path}/auth_token/exchange`, this.authController.authTokenExchange);
     // this.router.post(`${this.path}/refresh_token`, this.authController.refreshToken);
   }
 }

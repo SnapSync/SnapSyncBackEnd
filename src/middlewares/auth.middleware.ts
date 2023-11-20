@@ -1,11 +1,10 @@
 import { NextFunction, Response } from 'express';
 import { verify } from 'jsonwebtoken';
 import { SECRET_KEY } from '@config';
-import { HttpException } from '@exceptions/HttpException';
 import { DataStoredInToken, RequestWithUser } from '@interfaces/auth.interface';
 import { User } from '@interfaces/users.interface';
 import { Users } from '@models/users.model';
-import { i18nKeys } from '@/locales/i18nKeys';
+import { SnapSyncException } from '@/exceptions/SnapSyncException';
 
 const authMiddleware = async (req: RequestWithUser, res: Response, next: NextFunction) => {
   try {
@@ -21,10 +20,10 @@ const authMiddleware = async (req: RequestWithUser, res: Response, next: NextFun
         req.user = findUser;
         next();
       } else {
-        next(new HttpException(401, 'errors.invalid_authentication_token', 'Invalid authentication token'));
+        next(new SnapSyncException(401, 'Unauthorized'));
       }
     } else {
-      next(new HttpException(404, 'errors.authentication_token_missing', 'Authentication token missing'));
+      next(new SnapSyncException(403, 'Forbidden'));
     }
   } catch (error) {
     next(error);

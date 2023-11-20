@@ -71,5 +71,19 @@ export interface UserProfile {
   snapsCount: number;
 
   isMyProfile: boolean;
-
 }
+
+/**
+ * id: number
+ * username: string
+ * fullname: string
+ * biography: string | null
+ * profilePicture: {
+ *  height: number,
+ *  width: number,
+ *  url: string
+ * } | undefined
+ */
+
+// Salvo le immagini del profilo con un ratio di 1:1 -> 500x500
+// Salvo le immagini dei post con un ratio di 3:4 -> 1500x2000

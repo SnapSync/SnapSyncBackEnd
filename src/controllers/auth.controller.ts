@@ -183,6 +183,9 @@ class AuthController {
       // Se va a buon fine, invio OTP al numero di telefono
       // this.twilioService.sendOtp(au.phoneNumber);
 
+      // Aggiorno il campo otpSendedAt
+      await this.authUserService.updateAuthUserOtpSendedAt(au.id, new Date());
+
       res.status(200).json({ message: 'ok' });
     } catch (error) {
       next(error);
@@ -219,16 +222,20 @@ class AuthController {
       if (!authUser.phoneNumber) throw new HttpException(400, 'errors.something_went_wrong', 'Ops! Something went wrong'); // Significa che non ha completato il terzo step
       if (boolean(authUser.isPhoneNumberVerified)) throw new HttpException(400, 'errors.something_went_wrong', 'Ops! Something went wrong'); // Significa che ha già completato questo step
 
+      // TODO: Da rimuovere in produzione
+      const isValid = req.body.otp === '123456' ? true : false;
       // const isValid = await this.twilioService.verifyOtp(authUser.phoneNumber, req.body.otp);
-      // if (!isValid) throw new HttpException(401, 'errors.invalid_otp', 'Invalid OTP', undefined, SnapSyncErrorType.HttpNotAuthorizedError);
+      if (!isValid) throw new HttpException(401, 'errors.invalid_otp', 'Invalid OTP');
 
       await this.authUserService.updateAuthUserPhoneNumberVerified(authUser.id, true);
 
       // Controllo se l'utente esiste già: se si allora faccio login, altrimenti lo mando alla prossima schermata
       var exists = false;
       try {
-        await this.userService.findUserByPhoneNumber(authUser.phoneNumber);
-        exists = true;
+        const u = await this.userService.findUserByPhoneNumber(authUser.phoneNumber);
+        if (u) exists = true;
+
+        console.log(u);
       } catch (error) {
         if (error instanceof HttpException && error.status === 404) {
           exists = false;
@@ -314,7 +321,25 @@ class AuthController {
       if (!authUser.phoneNumber) throw new HttpException(400, 'errors.something_went_wrong', 'Ops! Something went wrong'); // Significa che non ha completato il terzo step
       if (boolean(authUser.isPhoneNumberVerified)) throw new HttpException(400, 'errors.something_went_wrong', 'Ops! Something went wrong'); // Significa che ha già completato questo step
 
+      // Verifico se è passato un minuto dall'ultimo invio
+      const now = new Date();
+      const otpSendedAt: Date | null = authUser.otpSendedAt;
+
+      if (otpSendedAt) {
+        // Se è passato un minuto, allora posso inviare un nuovo OTP
+        const diff = now.getTime() - otpSendedAt.getTime();
+        const minutes = Math.floor(diff / 1000 / 60);
+
+        if (minutes < 1) {
+          throw new HttpException(400, 'errors.something_went_wrong', 'Ops! Something went wrong');
+        }
+      }
+
+      // Invio un nuovo OTP
       // await this.twilioService.sendOtp(authUser.phoneNumber);
+
+      // Aggiorno il campo otpSendedAt
+      await this.authUserService.updateAuthUserOtpSendedAt(authUser.id, now);
 
       res.status(200).json({ message: 'ok' });
     } catch (error) {
@@ -367,6 +392,26 @@ class AuthController {
       const t = await this.authService.login(userId);
 
       res.status(200).json({ data: t, message: req.t('success.Ok') });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  public authToken = async (req: Request, res: Response, next: NextFunction) => {
+    const validationSchema = yup.object().shape({
+      authToken: yup.string().required(req.t('errors.validation.required', { field: req.t('fields.authToken') })),
+    });
+
+    try {
+      // if (!req.device || req.device === null) throw new HttpException(400, 'errors.device_not_set', 'Ops! Device is not set');
+
+      await validationSchema.validate(req.body, { abortEarly: false });
+
+      const { authToken } = req.body;
+
+      const d = await this.authService.loginByAuthToken(authToken);
+
+      res.status(200).json({ data: d, message: 'ok' });
     } catch (error) {
       next(error);
     }

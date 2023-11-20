@@ -10,24 +10,22 @@ import FriendshipsRoute from './routes/friendships.route';
 import NotificationsRoute from './routes/notifications.route';
 import SearchesRoute from './routes/searches.route';
 import SnapsSyncRoute from './routes/snaps_sync.route';
-import CountriesRoute from './routes/countries.route';
 import DevicesRoute from './routes/devices.route';
 
 validateEnv();
 
 const app = new App([
-    new IndexRoute(), 
-    new UsersRoute(), 
-    new CountriesRoute(),
-    new AuthRoute(),
-    new AccountsRoute(),
-    new CommentsRoute(),
-    new FeedRoute(),
-    new FriendshipsRoute(),
-    new NotificationsRoute(),
-    new SearchesRoute(),
-    new SnapsSyncRoute(),
-    new DevicesRoute(),
+  new IndexRoute(),
+  new UsersRoute(),
+  new AuthRoute(),
+  new AccountsRoute(),
+  new CommentsRoute(),
+  new FeedRoute(),
+  new FriendshipsRoute(),
+  new NotificationsRoute(),
+  new SearchesRoute(),
+  new SnapsSyncRoute(),
+  new DevicesRoute(),
 ]);
 
 app.listen();

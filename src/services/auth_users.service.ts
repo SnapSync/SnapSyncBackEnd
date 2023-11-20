@@ -193,6 +193,15 @@ class AuthUserService {
     return updatedAuthUser;
   }
 
+  public async updateAuthUserOtpSendedAt(id: number, otpSendedAt: Date): Promise<AuthUser> {
+    const findOne = await AuthUsers.query().whereNotDeleted().findById(id);
+    if (!findOne) throw new HttpException(404, 'errors.auth_user_not_found', 'AuthUser not found');
+
+    const updatedAuthUser = await AuthUsers.query().patchAndFetchById(id, { otpSendedAt });
+
+    return updatedAuthUser;
+  }
+
   public async updateAuthUserPhoneNumberVerified(id: number, phoneNumberVerified: boolean): Promise<AuthUser> {
     const findOne = await AuthUsers.query().whereNotDeleted().findById(id);
     if (!findOne) throw new HttpException(404, 'errors.auth_user_not_found', 'AuthUser not found');

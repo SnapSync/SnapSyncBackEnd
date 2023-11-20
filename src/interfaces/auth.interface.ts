@@ -25,6 +25,6 @@ export interface RequestWithDevice extends RequestWithClientIp {
 }
 
 export interface LogInResponse {
-  deviceUuid: string;
   tokenData: TokenData;
+  accessToken: string; // selector:validator
 }

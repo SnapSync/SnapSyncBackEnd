@@ -12,6 +12,9 @@ import { UserDevice } from '@/interfaces/users_devices.interface';
 import { UsersDevices } from '@/models/users_devices.model';
 import { phone } from 'phone';
 import { SnapSyncErrorType } from '@/utils/enum';
+import { v4 as uuidv4 } from 'uuid';
+import { sha256 } from 'js-sha256';
+import { AuthTokens } from '@/models/auth_tokens.model';
 
 class AuthService {
   public async loginByAuthUser(authUserId: number, device: Device): Promise<LogInResponse> {
@@ -23,26 +26,36 @@ class AuthService {
     if (!boolean(findAuthUser.isPhoneNumberVerified)) throw new HttpException(400, 'errors.something_went_wrong', 'Ops! Something went wrong');
 
     const findUserByPhoneNumber = await Users.query().whereNotDeleted().andWhere('phoneNumber', findAuthUser.phoneNumber).first();
-    if (!findUserByPhoneNumber) new HttpException(404, 'errors.user_not_found', 'User not found', undefined, SnapSyncErrorType.HttpNotFoundError);
+    if (!findUserByPhoneNumber) {
+      await AuthUsers.query().deleteById(authUserId);
+      new HttpException(404, 'errors.user_not_found', 'User not found', undefined, SnapSyncErrorType.HttpNotFoundError);
+    }
 
     // Controllo se l'utente è stato bannato
-    if (boolean(findUserByPhoneNumber.isBanned))
-      throw new HttpException(403, 'errors.user_banned', 'Ops! Your account has been banned', undefined, SnapSyncErrorType.HttpNotAuthorizedError);
+    if (boolean(findUserByPhoneNumber.isBanned)) {
+      await AuthUsers.query().deleteById(authUserId);
+      throw new HttpException(403, 'errors.user_banned', 'Ops! Your account has been banned', undefined, SnapSyncErrorType.SnapSyncUserBannedError);
+    }
 
     const trx = await Users.startTransaction();
 
     try {
       var findDevice = await Devices.query().whereNotDeleted().findOne({ uuid: device.uuid });
-      if (!findDevice) throw new HttpException(404, 'errors.device_not_found', 'Device not found', undefined, SnapSyncErrorType.HttpNotFoundError);
+      if (!findDevice) {
+        await AuthUsers.query().deleteById(authUserId);
+        throw new HttpException(404, 'errors.device_not_found', 'Device not found', undefined, SnapSyncErrorType.HttpNotFoundError);
+      }
 
       const td = this.createToken(findUserByPhoneNumber);
 
       // Controllo se l'utente si è già loggato con questo dispositivo almeno una volta
-      const ud: UserDevice = await UsersDevices.query(trx)
+      const ud: UserDevice | undefined = await UsersDevices.query(trx)
         .whereNotDeleted()
         .andWhere('userId', findUserByPhoneNumber.id)
         .andWhere('deviceId', findDevice.id)
         .first();
+
+      let userDeviceId: number;
 
       if (!ud) {
         // Recupero il conteggio dei dispositivi associati all'utente
@@ -58,23 +71,39 @@ class AuthService {
         }
 
         // Se non si è mai loggato con questo dispositivo lo aggiungo
-        await UsersDevices.query(trx).insert({
+        // TODO: Mandare una notifica all'utente che si è loggato da un nuovo dispositivo
+
+        const createdUserDevice = await UsersDevices.query(trx).insert({
           userId: findUserByPhoneNumber.id,
           deviceId: findDevice.id,
         });
+        userDeviceId = createdUserDevice.id;
       } else {
-        // TODO: Mandare una notifica all'utente che si è loggato con un dispositivo già associato al suo account
+        userDeviceId = ud.id;
       }
 
       // Elimino l'auth_user
       await AuthUsers.query(trx).deleteById(authUserId);
+
+      // Creo l'authToken per loggarsi al prossimo avvio dell'app
+      const selector = uuidv4();
+      const plainTextValidator = uuidv4();
+      const hashedValidator = sha256(plainTextValidator);
+
+      await AuthTokens.query(trx).insert({
+        userId: findUserByPhoneNumber.id,
+        deviceId: findDevice.id,
+        userDeviceId: userDeviceId,
+        selector: selector,
+        hashedValidator: hashedValidator,
+      });
 
       // Committo le modifiche
       await trx.commit();
 
       return {
         tokenData: td,
-        deviceUuid: findDevice.uuid,
+        accessToken: `${selector}:${plainTextValidator}`,
       };
     } catch (error) {
       await trx.rollback();
@@ -153,13 +182,26 @@ class AuthService {
       });
 
       // Ovviamente creo lo user_device
-      await UsersDevices.query(trx).insert({
+      const createdUserDevice = await UsersDevices.query(trx).insert({
         userId: createdUser.id,
         deviceId: findDevice.id,
       });
 
       // Elimito l'auth_user
       await AuthUsers.query(trx).deleteById(authUserId);
+
+      // Creo l'authToken per loggarsi al prossimo avvio dell'app
+      const selector = uuidv4();
+      const plainTextValidator = uuidv4();
+      const hashedValidator = sha256(plainTextValidator);
+
+      await AuthTokens.query(trx).insert({
+        userId: createdUser.id,
+        deviceId: findDevice.id,
+        userDeviceId: createdUserDevice.id,
+        selector: selector,
+        hashedValidator: hashedValidator,
+      });
 
       // Committo le modifiche
       await trx.commit();
@@ -169,12 +211,54 @@ class AuthService {
 
       return {
         tokenData: td,
-        deviceUuid: findDevice.uuid,
+        accessToken: `${selector}:${plainTextValidator}`,
       };
     } catch (error) {
       await trx.rollback();
       throw error;
     }
+  }
+
+  public async loginByAuthToken(accessToken: string): Promise<LogInResponse> {
+    const [selector, plainTextValidator] = accessToken.split(':');
+
+    // Cerco l'authToken tramite il selector
+    const findAuthToken = await AuthTokens.query().andWhere('selector', selector).first();
+    if (!findAuthToken) throw new HttpException(404, 'errors.auth_token_not_found', 'Auth token not found');
+
+    // Controllo se il validator è corretto
+    const hashedValidator = sha256(plainTextValidator);
+    if (hashedValidator !== findAuthToken.hashedValidator) {
+      // TODO: Capire se devo eliminare tutti gli authTokens associati a questo utente
+      throw new HttpException(401, 'errors.invalid_auth_token', 'Invalid auth token');
+    }
+
+    // TODO: Controllo se l'authToken è scaduto
+
+    // Recupero l'utente
+    const findUser = await Users.query().whereNotDeleted().findById(findAuthToken.userId);
+    if (!findUser) throw new HttpException(404, 'errors.user_not_found', 'User not found');
+    // Controllo se l'utente è stato bannato
+    if (boolean(findUser.isBanned))
+      throw new HttpException(403, 'errors.user_banned', 'Ops! Your account has been banned', undefined, SnapSyncErrorType.SnapSyncUserBannedError);
+
+    // TODO: Controllare che findAuthToken.deviceId sia uguale a device.id
+
+    const td = this.createToken(findUser);
+
+    // Aggiorno il validator
+    const newPlainTextValidator = uuidv4();
+    const newHashedValidator = sha256(newPlainTextValidator);
+
+    await AuthTokens.query().patchAndFetchById(findAuthToken.id, {
+      hashedValidator: newHashedValidator,
+      lastUsedAt: new Date(),
+    });
+
+    return {
+      tokenData: td,
+      accessToken: `${selector}:${newPlainTextValidator}`,
+    };
   }
 
   public async login(id: number): Promise<TokenData> {
