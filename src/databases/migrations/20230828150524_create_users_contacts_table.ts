@@ -7,6 +7,7 @@ export async function up(knex: Knex): Promise<void> {
 
     table.bigInteger('userId').unsigned().index().references('id').inTable('users').onDelete('CASCADE').notNullable();
     table.bigInteger('contactId').unsigned().index().references('id').inTable('users').onDelete('CASCADE').notNullable();
+    table.string('nickname').nullable();
 
     table.timestamp('createdAt').defaultTo(knex.fn.now());
     table.timestamp('updatedAt').defaultTo(knex.fn.now());

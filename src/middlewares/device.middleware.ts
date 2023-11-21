@@ -1,10 +1,10 @@
 import { NextFunction, Response } from 'express';
-import { HttpException } from '@exceptions/HttpException';
 import { RequestWithDevice } from '@/interfaces/auth.interface';
 import { validate as uuidValidate } from 'uuid';
 import { version as uuidVersion } from 'uuid';
 import { Device } from '@/interfaces/devices.interface';
 import { Devices } from '@/models/devices.model';
+import { SnapSyncException } from '@/exceptions/SnapSyncException';
 
 function uuidValidateV4(uuid) {
   return uuidValidate(uuid) && uuidVersion(uuid) === 4;
@@ -32,7 +32,7 @@ const deviceMiddleware = async (req: RequestWithDevice, res: Response, next: Nex
 
     next();
   } catch (error) {
-    next(new HttpException(500, error.message));
+    next(new SnapSyncException(500, 'Internal Server Error'));
   }
 };
 

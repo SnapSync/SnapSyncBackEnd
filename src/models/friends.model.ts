@@ -1,6 +1,7 @@
 import { Model, ModelObject, Pojo } from 'objection';
 import objectionSoftDelete from 'objection-js-soft-delete';
-import { AuthUser } from '@/interfaces/auth_users.interface';
+import { Friend } from '@/interfaces/friends.interface';
+import Status from '@/types/status.type';
 
 // Specify the options for this plugin. This are the defaults.
 const softDelete = objectionSoftDelete({
@@ -9,22 +10,26 @@ const softDelete = objectionSoftDelete({
   notDeletedValue: null,
 });
 
-export class AuthUsers extends softDelete(Model) implements AuthUser {
+export class Friends extends softDelete(Model) implements Friend {
   id!: number;
-  sessionId!: string;
-  username!: string | null;
-  fullname!: string | null;
-  phoneNumber!: string | null;
-  isPhoneNumberVerified!: boolean;
-  dateOfBirth!: Date | null;
-  otpSendedAt!: Date | null;
+  userId!: number;
+  friendId!: number;
+  status!: Status;
+
+  acceptedAt!: Date | null;
+  rejectedAt!: Date | null;
+
+  streak!: number;
+  lastSnapSyncAt!: Date | null;
+
+  friendshipHash!: string;
 
   createdAt!: Date;
   updatedAt!: Date;
   deletedAt!: Date | null;
   unarchived!: boolean;
 
-  static tableName = 'auth_users';
+  static tableName = 'friends';
   static idColumn = 'id';
 
   $formatJson(json: Pojo): Pojo {
@@ -37,4 +42,4 @@ export class AuthUsers extends softDelete(Model) implements AuthUser {
   }
 }
 
-export type AuthUsersShape = ModelObject<AuthUsers>;
+export type FriendsShape = ModelObject<Friends>;

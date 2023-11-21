@@ -14,8 +14,7 @@ class UsersRoute implements Routes {
 
   private initializeRoutes() {
     this.router.get(`${this.path}/me`, authMiddleware, this.usersController.getMe);
-    // this.router.get(`${this.path}/:userId(\\d+)`, authMiddleware, this.usersController.getUserById);
-    // this.router.delete(`${this.path}/:id(\\d+)`, this.usersController.deleteUser);
+    this.router.get(`${this.path}/profiles/:userId`, authMiddleware, this.usersController.getUserById);
   }
 }
 

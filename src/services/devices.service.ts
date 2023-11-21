@@ -14,11 +14,13 @@ class DeviceService {
 
     const createdDevice: Device = await Devices.query().insert({
       uuid: uuid,
+      platformOs: data.platformOs,
+      deviceType: data.deviceType,
+
       brand: data.brand,
       osName: data.osName,
       osVersion: data.osVersion,
       modelName: data.modelName,
-      platformOs: data.platformOs,
     });
 
     return createdDevice;

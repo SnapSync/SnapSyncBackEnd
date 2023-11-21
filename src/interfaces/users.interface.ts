@@ -1,14 +1,16 @@
+import { FriendshipStatus } from './friendship.interface';
+
 export interface User {
   id: number;
   username: string;
-  fullName: string;
-  profilePicImageKey: string;
+  fullname: string;
+  // profilePicImageKey: string;
+
+  profilePictureUrl: string | null;
+  profilePictureWidth: number | null;
+  profilePictureHeight: number | null;
 
   phoneNumber: string; // In formato internazionale, esempio: +393401234567
-  phoneNumberOnlyDigits: string; // Solo cifre, esempio: 393401234567
-  phoneNumberCountryIso2: string | null; // Codice ISO 3166-1 alpha-2 del paese, esempio: IT
-  latitude: number | null; // Indica la latitudine del luogo in cui l'utente si è registrato
-  longitude: number | null; // Indica la longitudine del luogo in cui l'utente si è registrato
 
   dateOfBirth: Date; // Data di nascita
 
@@ -36,41 +38,42 @@ export interface User {
 export interface ApiUser {
   id: number;
   username: string;
-  fullName: string;
+  fullname: string;
   isVerified: boolean;
-  profilePictureUrl: string;
-
-  socialContext?: string;
-  streak?: number;
-}
-
-export interface Biography {
-  rawText: string | null;
-  entities?: Array<BiographyEntity>;
-}
-
-export interface BiographyEntity {
-  type: 'user';
-  id: number;
-  text: string;
+  profilePicture: {
+    url: string;
+    width: number;
+    height: number;
+  } | null;
 }
 
 export interface UserProfile {
   id: number;
   username: string;
-  fullName: string;
+  dateOfBirth: Date;
+  fullname: string;
   isVerified: boolean;
-  profilePictureUrl: string;
+
+  phoneNumber?: string; // Visibile solo se è il mio profilo
+
+  biography: string | null;
+
+  location: {
+    latitude: number;
+    longitude: number;
+  } | null;
+
+  profilePicture: {
+    url: string;
+    width: number;
+    height: number;
+  } | null;
+
   isPrivate: boolean;
 
-  biography: Biography | null;
-
-  mutualFriendsCount?: number; // Nel caso non sia il mio profilo
-  friendsCount?: number; // Nel caso sia il mio profilo
-
-  snapsCount: number;
-
   isMyProfile: boolean;
+
+  friendshipStatus?: FriendshipStatus;
 }
 
 /**

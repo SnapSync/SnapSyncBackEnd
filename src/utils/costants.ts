@@ -1,7 +1,3 @@
-import { Users } from '@/models/users.model';
-import { SnapSyncErrorType } from '@/utils/enum';
-import { phone } from 'phone';
-
 export const MIN_FULLNAME_LENGTH = 3;
 export const MAX_FULLNAME_LENGTH = 64;
 // Devo accettare anche le lettere accentate
@@ -16,6 +12,4 @@ export const MIN_AGE = 13;
 
 export const MAX_BIO_LENGTH = 150;
 
-class ValidationService {}
-
-export default ValidationService;
+export const PROFILE_PICTURE_SIZE = 500;

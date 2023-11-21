@@ -10,12 +10,13 @@ export async function up(knex: Knex): Promise<void> {
     table.uuid('sessionId').notNullable();
 
     table.string('username', 30).nullable().defaultTo(null);
-    table.string('fullName', 64).nullable().defaultTo(null);
+    table.string('fullname', 64).nullable().defaultTo(null);
 
     table.string('phoneNumber', 20).nullable().defaultTo(null);
     table.boolean('isPhoneNumberVerified').notNullable().defaultTo(false);
 
     table.date('dateOfBirth').nullable().defaultTo(null);
+    table.timestamp('otpSendedAt').nullable().defaultTo(null);
 
     table.timestamp('createdAt').notNullable().defaultTo(knex.fn.now());
     table.timestamp('updatedAt').notNullable().defaultTo(knex.fn.now());

@@ -51,3 +51,12 @@ export const retrivePaginationParamFromRequest = (
 export const isLeapYear = (year: number): boolean => {
   return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
 };
+
+export const generateFriendshipHash = (userIdOne: number, userIdTwo: number): string => {
+  // LOWEST(1, 2)_HIGHEST(1, 2)
+
+  const lowest = userIdOne < userIdTwo ? userIdOne : userIdTwo;
+  const highest = userIdOne > userIdTwo ? userIdOne : userIdTwo;
+
+  return `${lowest}_${highest}`;
+};

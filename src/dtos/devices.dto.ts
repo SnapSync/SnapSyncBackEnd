@@ -1,7 +1,11 @@
+import DeviceType from '@/types/device_type.type';
+import PlatformOs from '@/types/platform_os.type';
+
 export class CreateDeviceDto {
-    brand?: string;
-    osName?: string;
-    osVersion?: string;
-    modelName?: string;
-    platformOs?: string;
+  platformOs: PlatformOs;
+  deviceType: DeviceType;
+  brand?: string;
+  osName?: string;
+  osVersion?: string;
+  modelName?: string;
 }

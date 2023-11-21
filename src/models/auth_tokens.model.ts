@@ -4,8 +4,6 @@ import { AuthToken } from '@/interfaces/auth_tokens.interface';
 export class AuthTokens extends Model implements AuthToken {
   id!: number;
   userId!: number;
-  deviceId!: number;
-  userDeviceId!: number;
   selector!: string;
   hashedValidator!: string;
   lastUsedAt!: Date | null;
