@@ -27,6 +27,7 @@ class UsersController {
 
       // Controllo se req.params.userId esiste
       const user = await this.userService.findUserById(userId);
+      if (!user) throw new SnapSyncException(404, 'Not Found');
 
       // Controllo che req.user.id non sia bloccato da req.params.userId
       const isLoggedUserBlockedByUser = await this.blockedUserService.isBlockedByUser(user.id, req.user.id);

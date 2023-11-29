@@ -5,6 +5,11 @@ import { BlockedUsers } from '@/models/blocked_users.model';
 import { generateFriendshipHash } from '@/utils/util';
 import { Friends } from '@/models/friends.model';
 import { StatusEnum } from '@/utils/enum';
+import knex from '@databases';
+import { SqlException } from '@/exceptions/SqlException';
+import { ApiUser, UserProfilePicture } from '@/interfaces/users.interface';
+import { PROFILE_PICTURE_SIZE } from '@/utils/costants';
+import { boolean } from 'boolean';
 
 class FriendService {
   public async getFriendshipStatus(userId: number, loggedUserId: number): Promise<FriendshipStatus> {
@@ -75,20 +80,326 @@ class FriendService {
     return fs;
   }
 
+  public async findFriendsByUserId(
+    userId: number,
+    query: string | null = null,
+    limit: number = 10,
+    offset: number = 0,
+  ): Promise<{
+    data: ApiUser[];
+    total: number;
+  }> {
+    const SqlSpName = 'Sp_GetUserFriends';
+
+    var users: ApiUser[] = [];
+
+    const prmQuery = query && query.length > 0 ? query : null;
+    const prmLimit = limit !== undefined && limit > 0 ? limit : 10;
+    const prmOffset = offset !== undefined && offset > 0 ? offset : 0;
+
+    let userFriendsCount: number = 0;
+
+    await knex
+      .raw(`CALL ${SqlSpName}(${userId}, ${prmQuery}, ${prmLimit}, ${prmOffset});`)
+      .then(async result => {
+        if (
+          result &&
+          Array.isArray(result) &&
+          result.length > 0 &&
+          Array.isArray(result[0]) &&
+          result[0].length > 0 &&
+          Array.isArray(result[0][0]) &&
+          result[0][0].length > 0
+        ) {
+          let rUsers = result[0][0];
+          for (let i = 0; i < rUsers.length; i++) {
+            let userObject: {
+              id: number;
+              username: string;
+              fullname: string;
+              profilePictureUrl: string | null;
+              profilePictureWidth: number | null;
+              profilePictureHeight: number | null;
+              biography: string | null;
+              isVerified: boolean;
+              acceptedAt: Date;
+              streak: number;
+              lastSnapSyncAt: Date | null;
+              count: number | null;
+            } = rUsers[i];
+            if (i === 0 && userObject.count !== undefined && userObject.count !== null) userFriendsCount = userObject.count;
+
+            let profilePicture: UserProfilePicture | null = null;
+
+            if (userObject.profilePictureUrl) {
+              profilePicture = {
+                url: userObject.profilePictureUrl,
+                width: userObject.profilePictureWidth || PROFILE_PICTURE_SIZE,
+                height: userObject.profilePictureHeight || PROFILE_PICTURE_SIZE,
+              };
+            }
+
+            users.push({
+              id: userObject.id,
+              username: userObject.username,
+              fullname: userObject.fullname,
+              profilePicture: profilePicture,
+              isVerified: boolean(userObject.isVerified),
+              streak: userObject.streak,
+            });
+          }
+        }
+      })
+      .catch(error => {
+        throw new SqlException(error);
+      });
+
+    return {
+      data: users,
+      total: userFriendsCount,
+    };
+  }
+
+  public async findReceivedFriendRequestsByUserId(
+    userId: number,
+    query: string | null = null,
+    limit: number = 10,
+    offset: number = 0,
+  ): Promise<{
+    data: ApiUser[];
+    total: number;
+  }> {
+    const SqlSpName = 'Sp_GetReceivedFriendRequests';
+
+    var users: ApiUser[] = [];
+
+    const prmQuery = query && query.length > 0 ? query : null;
+    const prmLimit = limit !== undefined && limit > 0 ? limit : 10;
+    const prmOffset = offset !== undefined && offset > 0 ? offset : 0;
+
+    let count: number = 0;
+
+    await knex
+      .raw(`CALL ${SqlSpName}(${userId}, ${prmQuery}, ${prmLimit}, ${prmOffset});`)
+      .then(async result => {
+        if (
+          result &&
+          Array.isArray(result) &&
+          result.length > 0 &&
+          Array.isArray(result[0]) &&
+          result[0].length > 0 &&
+          Array.isArray(result[0][0]) &&
+          result[0][0].length > 0
+        ) {
+          let rUsers = result[0][0];
+          for (let i = 0; i < rUsers.length; i++) {
+            let userObject: {
+              id: number;
+              username: string;
+              fullname: string;
+              profilePictureUrl: string | null;
+              profilePictureWidth: number | null;
+              profilePictureHeight: number | null;
+              biography: string | null;
+              isVerified: boolean;
+              createdAt: Date;
+              nickname: string | null;
+              mutualFriends: number | null;
+              count: number | null;
+            } = rUsers[i];
+
+            if (i === 0 && userObject.count !== undefined && userObject.count !== null) count = userObject.count;
+
+            let profilePicture: UserProfilePicture | null = null;
+
+            if (userObject.profilePictureUrl) {
+              profilePicture = {
+                url: userObject.profilePictureUrl,
+                width: userObject.profilePictureWidth || PROFILE_PICTURE_SIZE,
+                height: userObject.profilePictureHeight || PROFILE_PICTURE_SIZE,
+              };
+            }
+
+            users.push({
+              id: userObject.id,
+              username: userObject.username,
+              fullname: userObject.fullname,
+              isVerified: boolean(userObject.isVerified),
+              profilePicture: profilePicture,
+              contactNickname: userObject.nickname,
+              mutualFriends: userObject.mutualFriends,
+            });
+          }
+        }
+      })
+      .catch(error => {
+        throw new SqlException(error);
+      });
+
+    return {
+      data: users,
+      total: count,
+    };
+  }
+
+  public async findSentFriendRequestsByUserId(
+    userId: number,
+    query: string | null = null,
+    limit: number = 10,
+    offset: number = 0,
+  ): Promise<{
+    data: ApiUser[];
+    total: number;
+  }> {
+    const SqlSpName = 'Sp_GetSentFriendRequests';
+
+    var users: ApiUser[] = [];
+
+    const prmQuery = query && query.length > 0 ? query : null;
+    const prmLimit = limit !== undefined && limit > 0 ? limit : 10;
+    const prmOffset = offset !== undefined && offset > 0 ? offset : 0;
+
+    let count: number = 0;
+
+    await knex
+      .raw(`CALL ${SqlSpName}(${userId}, ${prmQuery}, ${prmLimit}, ${prmOffset});`)
+      .then(async result => {
+        if (
+          result &&
+          Array.isArray(result) &&
+          result.length > 0 &&
+          Array.isArray(result[0]) &&
+          result[0].length > 0 &&
+          Array.isArray(result[0][0]) &&
+          result[0][0].length > 0
+        ) {
+          let rUsers = result[0][0];
+          for (let i = 0; i < rUsers.length; i++) {
+            let userObject: {
+              id: number;
+              username: string;
+              fullname: string;
+              profilePictureUrl: string | null;
+              profilePictureWidth: number | null;
+              profilePictureHeight: number | null;
+              biography: string | null;
+              isVerified: boolean;
+              createdAt: Date;
+              count: number | null;
+            } = rUsers[i];
+
+            if (i === 0 && userObject.count !== undefined && userObject.count !== null) count = userObject.count;
+
+            let profilePicture: UserProfilePicture | null = null;
+
+            if (userObject.profilePictureUrl) {
+              profilePicture = {
+                url: userObject.profilePictureUrl,
+                width: userObject.profilePictureWidth || PROFILE_PICTURE_SIZE,
+                height: userObject.profilePictureHeight || PROFILE_PICTURE_SIZE,
+              };
+            }
+
+            users.push({
+              id: userObject.id,
+              username: userObject.username,
+              fullname: userObject.fullname,
+              isVerified: boolean(userObject.isVerified),
+              profilePicture: profilePicture,
+            });
+          }
+        }
+      })
+      .catch(error => {
+        throw new SqlException(error);
+      });
+
+    return {
+      data: users,
+      total: count,
+    };
+  }
+
+  public async countReceivedFriendRequests(userId: number, query: string | null = null): Promise<number> {
+    /**
+     * params:
+     * userId: number
+     * query: string | null = null
+     */
+    const SqlFnName = 'Fn_GetReceivedFriendRequestsCount';
+
+    var count = 0;
+
+    const prmQuery = query && query.length > 0 ? query : null;
+
+    await knex
+      .raw(`SELECT ${SqlFnName}(${userId}, ${prmQuery}) AS count;`)
+      .then(result => {
+        if (
+          result &&
+          Array.isArray(result) &&
+          result.length > 0 &&
+          Array.isArray(result[0]) &&
+          result[0].length > 0 &&
+          result[0][0].count !== undefined
+        ) {
+          count = result[0][0].count;
+        }
+      })
+      .catch(error => {
+        throw new SqlException(error);
+      });
+
+    return count;
+  }
+
+  public async countSentFriendRequests(userId: number, query: string | null = null): Promise<number> {
+    /**
+     * params:
+     * userId: number
+     * query: string | null = null
+     */
+    const SqlFnName = 'Fn_GetSentFriendRequestsCount';
+
+    var count = 0;
+
+    const prmQuery = query && query.length > 0 ? query : null;
+
+    await knex
+      .raw(`SELECT ${SqlFnName}(${userId}, ${prmQuery}) AS count;`)
+      .then(result => {
+        if (
+          result &&
+          Array.isArray(result) &&
+          result.length > 0 &&
+          Array.isArray(result[0]) &&
+          result[0].length > 0 &&
+          result[0][0].count !== undefined
+        ) {
+          count = result[0][0].count;
+        }
+      })
+      .catch(error => {
+        throw new SqlException(error);
+      });
+
+    return count;
+  }
+
   public async createFriendship(userId: number, friendId: number): Promise<void> {
-    const findUser = await Users.query().whereNotDeleted().findById(userId);
+    const findUser = await Users.query().whereNotDeleted().findById(userId); // Logged User
     if (!findUser) throw new SnapSyncException(404, 'Not Found');
 
-    const findFriend = await Users.query().whereNotDeleted().findById(friendId);
+    const findFriend = await Users.query().whereNotDeleted().findById(friendId); // User to add
     if (!findFriend) throw new SnapSyncException(404, 'Not Found');
 
     if (findUser.id === findFriend.id) throw new SnapSyncException(400, 'Bad Request');
 
-    // Controllo che findUser non abbiano bloccato findFriend
-    const isBlocked = await BlockedUsers.query().whereNotDeleted().andWhere('userId', findUser.id).andWhere('blockedUserId', findFriend.id).first();
+    // Controllo che findFriend non abbiano bloccato findUser
+    const isBlocked = await BlockedUsers.query().whereNotDeleted().andWhere('userId', findFriend.id).andWhere('blockedUserId', findUser.id).first();
     if (isBlocked) throw new SnapSyncException(404, 'Not Found');
 
-    const isBlocking = await BlockedUsers.query().whereNotDeleted().andWhere('userId', findFriend.id).andWhere('blockedUserId', findUser.id).first();
+    const isBlocking = await BlockedUsers.query().whereNotDeleted().andWhere('userId', findUser.id).andWhere('blockedUserId', findFriend.id).first();
     if (isBlocking) throw new SnapSyncException(400, 'Bad Request');
 
     // Controllo se sono amici
@@ -102,8 +413,8 @@ class FriendService {
       .whereNotDeleted()
       .andWhere('status', StatusEnum.pending)
       .andWhere('friendshipHash', fh)
-      .andWhere('friendId', friendId)
-      .andWhere('userId', userId)
+      .andWhere('friendId', userId)
+      .andWhere('userId', friendId)
       .first();
     if (incomingRequest) throw new SnapSyncException(400, 'Bad Request');
 
@@ -112,8 +423,8 @@ class FriendService {
       .whereNotDeleted()
       .andWhere('status', StatusEnum.pending)
       .andWhere('friendshipHash', fh)
-      .andWhere('friendId', userId)
-      .andWhere('userId', friendId)
+      .andWhere('friendId', friendId)
+      .andWhere('userId', userId)
       .first();
     if (outgoingRequest) throw new SnapSyncException(400, 'Bad Request');
 
@@ -126,19 +437,19 @@ class FriendService {
   }
 
   public async acceptFriendship(userId: number, friendId: number): Promise<void> {
-    const findUser = await Users.query().whereNotDeleted().findById(userId);
+    const findUser = await Users.query().whereNotDeleted().findById(userId); // Logged User -> quelle che riceve la richiesta
     if (!findUser) throw new SnapSyncException(404, 'Not Found');
 
-    const findFriend = await Users.query().whereNotDeleted().findById(friendId);
+    const findFriend = await Users.query().whereNotDeleted().findById(friendId); // quelle che invia la richiesta
     if (!findFriend) throw new SnapSyncException(404, 'Not Found');
 
     if (findUser.id === findFriend.id) throw new SnapSyncException(400, 'Bad Request');
 
-    // Controllo che findUser non abbiano bloccato findFriend
-    const isBlocked = await BlockedUsers.query().whereNotDeleted().andWhere('userId', findUser.id).andWhere('blockedUserId', findFriend.id).first();
+    // Controllo che findFriend non abbiano bloccato findUser
+    const isBlocked = await BlockedUsers.query().whereNotDeleted().andWhere('userId', findFriend.id).andWhere('blockedUserId', findUser.id).first();
     if (isBlocked) throw new SnapSyncException(404, 'Not Found');
 
-    const isBlocking = await BlockedUsers.query().whereNotDeleted().andWhere('userId', findFriend.id).andWhere('blockedUserId', findUser.id).first();
+    const isBlocking = await BlockedUsers.query().whereNotDeleted().andWhere('userId', findUser.id).andWhere('blockedUserId', findFriend.id).first();
     if (isBlocking) throw new SnapSyncException(400, 'Bad Request');
 
     // Controllo se sono amici
@@ -152,8 +463,8 @@ class FriendService {
       .whereNotDeleted()
       .andWhere('status', StatusEnum.pending)
       .andWhere('friendshipHash', fh)
-      .andWhere('friendId', friendId)
-      .andWhere('userId', userId)
+      .andWhere('friendId', findUser.id)
+      .andWhere('userId', findFriend.id)
       .first();
     if (!incomingRequest) throw new SnapSyncException(400, 'Bad Request');
 
@@ -165,6 +476,48 @@ class FriendService {
   }
 
   public async rejectFriendship(userId: number, friendId: number): Promise<void> {
+    const findUser = await Users.query().whereNotDeleted().findById(userId); // Logged User -> quelle che riceve la richiesta
+    if (!findUser) throw new SnapSyncException(404, 'Not Found');
+
+    const findFriend = await Users.query().whereNotDeleted().findById(friendId); // quelle che invia la richiesta
+    if (!findFriend) throw new SnapSyncException(404, 'Not Found');
+
+    if (findUser.id === findFriend.id) throw new SnapSyncException(400, 'Bad Request');
+
+    // Controllo che findFriend non abbiano bloccato findUser
+    const isBlocked = await BlockedUsers.query().whereNotDeleted().andWhere('userId', findFriend.id).andWhere('blockedUserId', findUser.id).first();
+    if (isBlocked) throw new SnapSyncException(404, 'Not Found');
+
+    const isBlocking = await BlockedUsers.query().whereNotDeleted().andWhere('userId', findUser.id).andWhere('blockedUserId', findFriend.id).first();
+    if (isBlocking) throw new SnapSyncException(400, 'Bad Request');
+
+    // Controllo se sono amici
+    let areFriends = await this.areFriends(userId, friendId);
+    if (areFriends) throw new SnapSyncException(400, 'Bad Request');
+
+    // Controllo se esiste una richiesta pendente per findFriend fatta da findUser
+    let fh = generateFriendshipHash(userId, friendId);
+
+    const incomingRequest = await Friends.query()
+      .whereNotDeleted()
+      .andWhere('status', StatusEnum.pending)
+      .andWhere('friendshipHash', fh)
+      .andWhere('friendId', findUser.id)
+      .andWhere('userId', findFriend.id)
+      .first();
+    if (!incomingRequest) throw new SnapSyncException(400, 'Bad Request');
+
+    // Rifiuto la richiesta
+    await Friends.query().patchAndFetchById(incomingRequest.id, {
+      rejectedAt: new Date(),
+      status: 'rejected',
+    });
+
+    // Elimino la richiesta tanto non è più necessaria
+    await Friends.query().deleteById(incomingRequest.id);
+  }
+
+  public async destroyFriendship(userId: number, friendId: number): Promise<void> {
     const findUser = await Users.query().whereNotDeleted().findById(userId);
     if (!findUser) throw new SnapSyncException(404, 'Not Found');
 
@@ -180,30 +533,22 @@ class FriendService {
     const isBlocking = await BlockedUsers.query().whereNotDeleted().andWhere('userId', findFriend.id).andWhere('blockedUserId', findUser.id).first();
     if (isBlocking) throw new SnapSyncException(400, 'Bad Request');
 
-    // Controllo se sono amici
+    // Per poter eliminare un record devo essere amici oppure userId deve aver inviato una richiesta a friendId
     let areFriends = await this.areFriends(userId, friendId);
-    if (areFriends) throw new SnapSyncException(400, 'Bad Request');
 
-    // Controllo se esiste una richiesta pendente per findFriend fatta da findUser
-    let fh = generateFriendshipHash(userId, friendId);
-
-    const incomingRequest = await Friends.query()
+    const fh = generateFriendshipHash(userId, friendId);
+    const outgoingRequest = await Friends.query()
       .whereNotDeleted()
       .andWhere('status', StatusEnum.pending)
       .andWhere('friendshipHash', fh)
       .andWhere('friendId', friendId)
       .andWhere('userId', userId)
       .first();
-    if (!incomingRequest) throw new SnapSyncException(400, 'Bad Request');
 
-    // Rifiuto la richiesta
-    await Friends.query().patchAndFetchById(incomingRequest.id, {
-      rejectedAt: new Date(),
-      status: 'rejected',
-    });
+    if (!areFriends && !outgoingRequest) throw new SnapSyncException(400, 'Bad Request');
 
-    // Elimino la richiesta tanto non è più necessaria
-    await Friends.query().deleteById(incomingRequest.id);
+    // Elimino la richiesta
+    await Friends.query().delete().where('friendshipHash', fh);
   }
 
   public async areFriends(userId: number, loggedUserId: number): Promise<boolean> {

@@ -26,7 +26,7 @@ export const retrivePaginationParamFromRequest = (
   page: number;
   size: number;
 } => {
-  var p = 0;
+  var p = 1;
   var s = 30;
 
   const qPage = req.query && req.query.page ? req.query.page : null;
@@ -37,8 +37,8 @@ export const retrivePaginationParamFromRequest = (
     p = Number(qPage);
   }
 
-  // Verifico se qSize esiste e se è un numero e se è maggiore di 0
-  if (typeof qSize === 'string' && !isNaN(Number(qSize)) && Number(qSize) > 0) {
+  // Verifico se qSize esiste e se è un numero e se è maggiore di 0 && minore di 30
+  if (typeof qSize === 'string' && !isNaN(Number(qSize)) && Number(qSize) > 0 && Number(qSize) <= 30) {
     s = Number(qSize);
   }
 

@@ -1,10 +1,9 @@
-import { ApiUser, User, UserProfile } from '@/interfaces/users.interface';
+import { ApiUser, User, UserProfile, UserProfilePicture } from '@/interfaces/users.interface';
 import { Users } from '@/models/users.model';
 import { boolean } from 'boolean';
 import { SnapSyncException } from '@/exceptions/SnapSyncException';
 import { PROFILE_PICTURE_SIZE } from '@/utils/costants';
-import { FriendshipStatus } from '@/interfaces/friendship.interface';
-import FriendService from './friends.service';
+
 class UserService {
   public async findAllUser(): Promise<User[]> {
     const findAllUsers: User[] = await Users.query().whereNotDeleted();
@@ -13,7 +12,7 @@ class UserService {
 
   public async findUserById(userId: number): Promise<User> {
     const findOne = await Users.query().whereNotDeleted().findById(userId);
-    if (!findOne) new SnapSyncException(404, 'Not Found');
+    if (!findOne) throw new SnapSyncException(404, 'Not Found');
 
     return findOne;
   }
@@ -35,11 +34,7 @@ class UserService {
     const findOne = await Users.query().whereNotDeleted().findById(userId);
     if (!findOne) throw new SnapSyncException(404, 'Not Found');
 
-    let profilePicture: {
-      url: string;
-      width: number;
-      height: number;
-    } | null = null;
+    let profilePicture: UserProfilePicture | null = null;
 
     if (findOne.profilePictureUrl) {
       profilePicture = {
@@ -83,11 +78,11 @@ class UserService {
 
     const isMyProfile = findUser.id === findLoggedUser.id;
 
-    let friendshipStatus: FriendshipStatus | undefined = undefined;
+    // let friendshipStatus: FriendshipStatus | undefined = undefined;
 
-    if (!isMyProfile) {
-      friendshipStatus = await new FriendService().getFriendshipStatus(findUser.id, findLoggedUser.id);
-    }
+    // if (!isMyProfile) {
+    //   friendshipStatus = await new FriendService().getFriendshipStatus(findUser.id, findLoggedUser.id);
+    // }
 
     const up: UserProfile = {
       id: findUser.id,
@@ -106,7 +101,9 @@ class UserService {
 
       isMyProfile: isMyProfile,
 
-      friendshipStatus: friendshipStatus,
+      streak: !isMyProfile ? Math.floor(Math.random() * 100) : undefined,
+
+      // friendshipStatus: friendshipStatus,
     };
 
     return up;

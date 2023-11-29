@@ -1,5 +1,3 @@
-import { FriendshipStatus } from './friendship.interface';
-
 export interface User {
   id: number;
   username: string;
@@ -35,16 +33,22 @@ export interface User {
   unarchived: boolean;
 }
 
+export interface UserProfilePicture {
+  url: string;
+  width: number;
+  height: number;
+}
+
 export interface ApiUser {
   id: number;
   username: string;
   fullname: string;
   isVerified: boolean;
-  profilePicture: {
-    url: string;
-    width: number;
-    height: number;
-  } | null;
+  profilePicture: UserProfilePicture | null;
+
+  contactNickname?: string | null;
+  mutualFriends?: number | null;
+  streak?: number | null;
 }
 
 export interface UserProfile {
@@ -63,17 +67,15 @@ export interface UserProfile {
     longitude: number;
   } | null;
 
-  profilePicture: {
-    url: string;
-    width: number;
-    height: number;
-  } | null;
+  profilePicture: UserProfilePicture | null;
 
   isPrivate: boolean;
 
   isMyProfile: boolean;
 
-  friendshipStatus?: FriendshipStatus;
+  streak?: number | null;
+
+  // friendshipStatus?: FriendshipStatus;
 }
 
 /**

@@ -4,7 +4,7 @@ import { DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_DATABASE } from '@config';
 const dbConnection = {
   client: 'mysql',
   connection: {
-    charset: 'utf8',
+    charset: 'utf8mb4',
     timezone: 'UTC',
     host: DB_HOST,
     port: DB_PORT,

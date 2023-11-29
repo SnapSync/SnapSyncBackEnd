@@ -55,6 +55,7 @@ class AuthService {
       await trx.commit();
 
       return {
+        userId: findUserByPhoneNumber.id,
         tokenData: td,
         accessToken: `${selector}:${plainTextValidator}`,
       };
@@ -131,6 +132,7 @@ class AuthService {
       const td = this.createToken(createdUser);
 
       return {
+        userId: createdUser.id,
         tokenData: td,
         accessToken: `${selector}:${plainTextValidator}`,
       };
@@ -174,6 +176,7 @@ class AuthService {
     });
 
     return {
+      userId: findUser.id,
       tokenData: td,
       accessToken: `${selector}:${newPlainTextValidator}`,
     };

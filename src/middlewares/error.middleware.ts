@@ -13,25 +13,20 @@ const errorMiddleware = (
 ) => {
   try {
     var status: number = 500;
-    var message: string = req.t('errors.something_went_wrong');
+    var message: string = 'Ops! An error occurred.';
     var type: string | null = null;
     var fields: string[] | null = null;
     var timestamp: Date = new Date();
     var data: any = null;
 
     if (error instanceof SqlException) {
-      const splittedMessage = error.sqlMessage.split('-');
-      type = error.name;
+      const sqlMessage = error.sqlMessage;
+      type = error.code;
 
-      // Di default torno Something went wrong
-
-      if (splittedMessage.length > 1) {
-        status = Number(splittedMessage[0]);
-        message = splittedMessage[1];
-      } else if (splittedMessage.length == 1) {
-        message = splittedMessage[0];
-      } else {
-        message = 'Something went wrong';
+      // Se message è un numero, allora è lo status code
+      if (!isNaN(Number(sqlMessage))) {
+        status = Number(sqlMessage);
+        // message = error.sqlMessage;
       }
     } else if (error instanceof ValidationError) {
       error.inner.forEach(e => {
