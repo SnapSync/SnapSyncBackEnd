@@ -15,6 +15,7 @@ export class Users extends softDelete(Model) implements User {
   fullname!: string;
 
   profilePictureUrl!: string | null;
+  profilePictureBlurHash!: string | null;
   profilePictureWidth!: number | null;
   profilePictureHeight!: number | null;
 

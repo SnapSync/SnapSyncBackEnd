@@ -1,6 +1,3 @@
-import DeviceType from '@/types/device_type.type';
-import PlatformOs from '@/types/platform_os.type';
-
 export interface Device {
   id: number;
   uuid: string;
@@ -19,3 +16,6 @@ export interface Device {
 
   unarchived: boolean;
 }
+
+export type DeviceType = 'UNKNOWN' | 'PHONE' | 'TABLET' | 'TV' | 'DESKTOP';
+export type PlatformOs = 'UNKNOWN' | 'android' | 'ios' | 'windows' | 'macos' | 'web';

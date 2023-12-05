@@ -38,35 +38,45 @@ class FriendshipsController {
     }
   };
 
-  // public getMutualFriends = async (req: RequestWithUser, res: Response, nex: NextFunction) => {
-  //   try {
-  //     if (!req.params.userId) throw new HttpException(400, 'Missing userId parameter');
-  //     if (isNaN(parseInt(req.params.userId))) throw new HttpException(400, 'User id is not a number');
+  public getMutualFriends = async (req: RequestWithUser, res: Response, nex: NextFunction) => {
+    try {
+      if (!req.params.userId) throw new SnapSyncException(400, 'Bad request');
+      if (isNaN(parseInt(req.params.userId))) throw new SnapSyncException(400, 'Bad request');
 
-  //     const userId = parseInt(req.params.userId);
-  //     // Controllo se req.params.userId esiste
-  //     const findUser = await this.userService.findUserById(userId);
-  //     if (!findUser) throw new HttpException(404, 'User not found');
+      const userId = parseInt(req.params.userId);
+      // Controllo se req.params.userId esiste
+      const findUser = await this.userService.findUserById(userId);
+      if (!findUser) throw new SnapSyncException(404, 'Not found');
+      if (findUser.id === req.user.id) throw new SnapSyncException(400, 'Bad request');
 
-  //     if (findUser.id === req.user.id) throw new HttpException(400, 'Ops! You cannot see your mutual friends');
+      // Controllo che req.user.id non sia bloccato da req.params.userId
+      const isLoggedUserBlocked = await this.blockedUserService.isBlockedByUser(findUser.id, req.user.id);
+      if (isLoggedUserBlocked) throw new SnapSyncException(404, 'Not found');
 
-  //     // Controllo che req.user.id non sia bloccato da req.params.userId
-  //     const isLoggedUser = await this.blockedUserService.isBlockedByUser(userId, req.user.id);
-  //     if (isLoggedUser) throw new HttpException(404, 'User not found');
+      let p = retrivePaginationParamFromRequest(req);
 
-  //     const pagination = retrivePaginationParamFromRequest(req);
+      // Calcolo il limit e l'offset
+      const limit = p.size;
+      const offset = (p.page - 1) * p.size;
 
-  //     // Calcolo il limit e l'offset
-  //     const limit = pagination.size;
-  //     const offset = (pagination.page - 1) * pagination.size;
+      const mutualFriends = await this.friendService.findMutualFriendsByUserId(req.user.id, findUser.id, limit, offset);
 
-  //     const r = await this.friendService.findMutualFriendsByUserId(findUser.id, req.user.id, undefined, limit, offset);
+      // Calcolo il nextCursor/prevCursor per React-Query
+      const allPages = Math.ceil(mutualFriends.total / limit);
+      const nextCursor: number | undefined = allPages > p.page ? p.page + 1 : undefined;
+      const prevCursor: number | undefined = p.page > 1 ? p.page - 1 : undefined;
 
-  //     res.status(200).json({ ...r });
-  //   } catch (error) {
-  //     nex(error);
-  //   }
-  // };
+      res.status(200).json({
+        message: 'ok',
+        data: mutualFriends.data,
+        nextCursor: nextCursor,
+        prevCursor: prevCursor,
+        total: mutualFriends.total,
+      });
+    } catch (error) {
+      nex(error);
+    }
+  };
 
   public getReceivedFriendRequests = async (req: RequestWithUser, res: Response, nex: NextFunction) => {
     try {

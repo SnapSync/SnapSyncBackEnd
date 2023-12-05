@@ -12,16 +12,17 @@ export interface TokenData {
   refreshToken: string;
 }
 
-export interface RequestWithClientIp extends Request {
-  clientIp: string;
+export interface IFile {
+  fieldname: string;
+  originalname: string;
+  encoding: string;
+  mimetype: string;
+  buffer: Buffer;
+  size: number;
 }
 
-export interface RequestWithUser extends RequestWithClientIp {
+export interface RequestWithUser extends Request {
   user: User;
-}
-
-export interface RequestWithDevice extends RequestWithClientIp {
-  device: Device | null;
 }
 
 export interface LogInResponse {

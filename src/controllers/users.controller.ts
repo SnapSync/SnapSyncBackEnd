@@ -8,6 +8,16 @@ class UsersController {
   public userService = new UserService();
   public blockedUserService = new BlockedUserService();
 
+  public getUsers = async (req: RequestWithUser, res: Response, next: NextFunction) => {
+    try {
+      const users = await this.userService.findAllUsers();
+
+      res.status(200).json({ data: users, message: 'ok' });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   public getMe = async (req: RequestWithUser, res: Response, next: NextFunction) => {
     try {
       const apiUser = await this.userService.findApiUserById(req.user.id);

@@ -118,6 +118,7 @@ class FriendService {
               username: string;
               fullname: string;
               profilePictureUrl: string | null;
+              profilePictureBlurHash: string | null;
               profilePictureWidth: number | null;
               profilePictureHeight: number | null;
               biography: string | null;
@@ -136,6 +137,7 @@ class FriendService {
                 url: userObject.profilePictureUrl,
                 width: userObject.profilePictureWidth || PROFILE_PICTURE_SIZE,
                 height: userObject.profilePictureHeight || PROFILE_PICTURE_SIZE,
+                blurHash: userObject.profilePictureBlurHash || null,
               };
             }
 
@@ -157,6 +159,85 @@ class FriendService {
     return {
       data: users,
       total: userFriendsCount,
+    };
+  }
+
+  public async findMutualFriendsByUserId(
+    userId: number,
+    loggedUserId: number,
+    // query: string | null = null,
+    limit: number = 10,
+    offset: number = 0,
+  ): Promise<{
+    data: ApiUser[];
+    total: number;
+  }> {
+    const SqlSpName = 'Sp_GetMutualFriends';
+
+    var users: ApiUser[] = [];
+
+    // const prmQuery = query && query.length > 0 ? query : null;
+    const prmLimit = limit !== undefined && limit > 0 ? limit : 10;
+    const prmOffset = offset !== undefined && offset > 0 ? offset : 0;
+
+    let userMutualFriendsCount: number = 0;
+
+    await knex
+      .raw(`CALL ${SqlSpName}(${userId}, ${loggedUserId}, ${prmLimit}, ${prmOffset});`)
+      .then(async result => {
+        if (
+          result &&
+          Array.isArray(result) &&
+          result.length > 0 &&
+          Array.isArray(result[0]) &&
+          result[0].length > 0 &&
+          Array.isArray(result[0][0]) &&
+          result[0][0].length > 0
+        ) {
+          let rUsers = result[0][0];
+          for (let i = 0; i < rUsers.length; i++) {
+            let userObject: {
+              id: number;
+              username: string;
+              fullname: string;
+              profilePictureUrl: string | null;
+              profilePictureBlurHash: string | null;
+              profilePictureWidth: number | null;
+              profilePictureHeight: number | null;
+              biography: string | null;
+              isVerified: boolean;
+              count: number | null;
+            } = rUsers[i];
+            if (i === 0 && userObject.count !== undefined && userObject.count !== null) userMutualFriendsCount = userObject.count;
+
+            let profilePicture: UserProfilePicture | null = null;
+
+            if (userObject.profilePictureUrl) {
+              profilePicture = {
+                url: userObject.profilePictureUrl,
+                width: userObject.profilePictureWidth || PROFILE_PICTURE_SIZE,
+                height: userObject.profilePictureHeight || PROFILE_PICTURE_SIZE,
+                blurHash: userObject.profilePictureBlurHash || null,
+              };
+            }
+
+            users.push({
+              id: userObject.id,
+              username: userObject.username,
+              fullname: userObject.fullname,
+              profilePicture: profilePicture,
+              isVerified: boolean(userObject.isVerified),
+            });
+          }
+        }
+      })
+      .catch(error => {
+        throw new SqlException(error);
+      });
+
+    return {
+      data: users,
+      total: userMutualFriendsCount,
     };
   }
 
@@ -198,13 +279,13 @@ class FriendService {
               username: string;
               fullname: string;
               profilePictureUrl: string | null;
+              profilePictureBlurHash: string | null;
               profilePictureWidth: number | null;
               profilePictureHeight: number | null;
               biography: string | null;
               isVerified: boolean;
               createdAt: Date;
               nickname: string | null;
-              mutualFriends: number | null;
               count: number | null;
             } = rUsers[i];
 
@@ -217,6 +298,7 @@ class FriendService {
                 url: userObject.profilePictureUrl,
                 width: userObject.profilePictureWidth || PROFILE_PICTURE_SIZE,
                 height: userObject.profilePictureHeight || PROFILE_PICTURE_SIZE,
+                blurHash: userObject.profilePictureBlurHash || null,
               };
             }
 
@@ -227,7 +309,6 @@ class FriendService {
               isVerified: boolean(userObject.isVerified),
               profilePicture: profilePicture,
               contactNickname: userObject.nickname,
-              mutualFriends: userObject.mutualFriends,
             });
           }
         }
@@ -280,6 +361,7 @@ class FriendService {
               username: string;
               fullname: string;
               profilePictureUrl: string | null;
+              profilePictureBlurHash: string | null;
               profilePictureWidth: number | null;
               profilePictureHeight: number | null;
               biography: string | null;
@@ -297,6 +379,7 @@ class FriendService {
                 url: userObject.profilePictureUrl,
                 width: userObject.profilePictureWidth || PROFILE_PICTURE_SIZE,
                 height: userObject.profilePictureHeight || PROFILE_PICTURE_SIZE,
+                blurHash: userObject.profilePictureBlurHash || null,
               };
             }
 

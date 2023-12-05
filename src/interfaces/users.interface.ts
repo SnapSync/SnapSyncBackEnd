@@ -5,6 +5,7 @@ export interface User {
   // profilePicImageKey: string;
 
   profilePictureUrl: string | null;
+  profilePictureBlurHash: string | null;
   profilePictureWidth: number | null;
   profilePictureHeight: number | null;
 
@@ -37,6 +38,7 @@ export interface UserProfilePicture {
   url: string;
   width: number;
   height: number;
+  blurHash: string | null;
 }
 
 export interface ApiUser {
@@ -45,6 +47,8 @@ export interface ApiUser {
   fullname: string;
   isVerified: boolean;
   profilePicture: UserProfilePicture | null;
+
+  biography?: string | null;
 
   contactNickname?: string | null;
   mutualFriends?: number | null;

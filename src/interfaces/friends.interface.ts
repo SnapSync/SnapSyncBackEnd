@@ -1,5 +1,3 @@
-import Status from '@/types/status.type';
-
 export interface Friend {
   id: number;
   userId: number;
@@ -19,3 +17,5 @@ export interface Friend {
   deletedAt: Date | null;
   unarchived: boolean;
 }
+
+export type Status = 'pending' | 'accepted' | 'rejected';

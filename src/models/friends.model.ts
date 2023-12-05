@@ -1,7 +1,6 @@
 import { Model, ModelObject, Pojo } from 'objection';
 import objectionSoftDelete from 'objection-js-soft-delete';
-import { Friend } from '@/interfaces/friends.interface';
-import Status from '@/types/status.type';
+import { Friend, Status } from '@/interfaces/friends.interface';
 
 // Specify the options for this plugin. This are the defaults.
 const softDelete = objectionSoftDelete({
