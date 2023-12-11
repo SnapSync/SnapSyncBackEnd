@@ -38,9 +38,10 @@ class AccountsRoute implements Routes {
 
   private initializeRoutes() {
     this.router.get(`${this.path}/edit/web_form_data`, authMiddleware, this.accountsController.getWebFormData);
-    this.router.post(`${this.path}/edit/username`, authMiddleware, this.accountsController.changeUsername);
-    this.router.post(`${this.path}/edit/fullname`, authMiddleware, this.accountsController.changeFullName);
-    this.router.post(`${this.path}/edit/biography`, authMiddleware, this.accountsController.changeBiography);
+    this.router.post(`${this.path}/edit`, authMiddleware, this.accountsController.editAccount);
+    // this.router.post(`${this.path}/edit/username`, authMiddleware, this.accountsController.changeUsername);
+    // this.router.post(`${this.path}/edit/fullname`, authMiddleware, this.accountsController.changeFullName);
+    // this.router.post(`${this.path}/edit/biography`, authMiddleware, this.accountsController.changeBiography);
 
     this.router.post(
       `${this.path}/web_change_profile_pic`,

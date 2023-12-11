@@ -11,6 +11,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { sha256 } from 'js-sha256';
 import { AuthTokens } from '@/models/auth_tokens.model';
 import { SnapSyncException } from '@/exceptions/SnapSyncException';
+import { UsersSettings } from '@/models/users_settings.model';
 
 class AuthService {
   public async loginByAuthUser(authUserId: number): Promise<LogInResponse> {
@@ -113,6 +114,12 @@ class AuthService {
 
       // Elimito l'auth_user
       await AuthUsers.query(trx).deleteById(authUserId);
+
+      // Creo lo users_settings
+      await UsersSettings.query(trx).insert({
+        userId: createdUser.id,
+        allowSyncContacts: false,
+      });
 
       // Creo l'authToken per loggarsi al prossimo avvio dell'app
       const selector = uuidv4();

@@ -32,6 +32,7 @@ class FriendshipsController {
         data: friends.data,
         nextCursor: nextCursor,
         prevCursor: prevCursor,
+        total: friends.total,
       });
     } catch (error) {
       nex(error);
@@ -72,6 +73,30 @@ class FriendshipsController {
         nextCursor: nextCursor,
         prevCursor: prevCursor,
         total: mutualFriends.total,
+      });
+    } catch (error) {
+      nex(error);
+    }
+  };
+
+  public getSuggestions = async (req: RequestWithUser, res: Response, nex: NextFunction) => {
+    try {
+      let p = retrivePaginationParamFromRequest(req);
+
+      // Calcolo il limit e l'offset
+      const limit = p.size;
+      const offset = (p.page - 1) * p.size;
+
+      const suggestions = await this.friendService.findSuggestionsByUserId(req.user.id, limit, offset);
+
+      // Calcolo il nextCursor/prevCursor per React-Query
+      // const allPages = Math.ceil(suggestions.total / limit);
+      // const nextCursor: number | undefined = allPages > p.page ? p.page + 1 : undefined;
+      // const prevCursor: number | undefined = p.page > 1 ? p.page - 1 : undefined;
+
+      res.status(200).json({
+        message: 'ok',
+        data: suggestions.data,
       });
     } catch (error) {
       nex(error);

@@ -1,7 +1,7 @@
 export interface UserSetting {
   id: number;
   userId: number;
-  syncContacts: boolean;
+  allowSyncContacts: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -4,7 +4,7 @@ import { UserSetting } from '@/interfaces/users_settings.interface';
 export class UsersSettings extends Model implements UserSetting {
   id!: number;
   userId!: number;
-  syncContacts!: boolean;
+  allowSyncContacts!: boolean;
 
   createdAt!: Date;
   updatedAt!: Date;

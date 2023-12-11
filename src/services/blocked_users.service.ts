@@ -1,12 +1,38 @@
 import { CreateBlockedUserDto } from '@/dtos/blocked_users.dto';
 import { SnapSyncException } from '@/exceptions/SnapSyncException';
 import { BlockedUser } from '@/interfaces/blocked_users.interface';
+import { ApiUser } from '@/interfaces/users.interface';
 import { BlockedUsers } from '@/models/blocked_users.model';
 import { Friends } from '@/models/friends.model';
 import { Users } from '@/models/users.model';
 import { generateFriendshipHash, isEmpty } from '@/utils/util';
+import UserService from './users.service';
 
 class BlockedUserService {
+  public async findBlockedUsersByUserId(
+    userId: number,
+    limit: number,
+    offset: number,
+  ): Promise<{
+    data: ApiUser[];
+    total: number;
+  }> {
+    const findUser = await Users.query().whereNotDeleted().findById(userId);
+    if (!findUser) throw new SnapSyncException(404, 'Not Found');
+
+    const data = await BlockedUsers.query().whereNotDeleted().andWhere('userId', userId).limit(limit).offset(offset);
+    const total = await BlockedUsers.query().whereNotDeleted().andWhere('userId', userId).resultSize();
+
+    let users: ApiUser[] = [];
+
+    for (let i = 0; i < data.length; i++) {
+      let apiUser = await new UserService().findApiUserById(data[i].blockedUserId);
+      users.push(apiUser);
+    }
+
+    return { data: users, total: total };
+  }
+
   public async blockUser(data: CreateBlockedUserDto): Promise<BlockedUser> {
     if (isEmpty(data)) throw new SnapSyncException(400, 'Bad Request');
 

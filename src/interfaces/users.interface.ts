@@ -50,9 +50,9 @@ export interface ApiUser {
 
   biography?: string | null;
 
-  contactNickname?: string | null;
-  mutualFriends?: number | null;
-  streak?: number | null;
+  contactNickname?: string;
+  mutualFriends?: number;
+  streak?: number;
 }
 
 export interface UserProfile {

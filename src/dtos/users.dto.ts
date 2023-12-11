@@ -4,3 +4,9 @@ export class UpdateProfilePictureDto {
   profilePictureWidth: number;
   profilePictureHeight: number;
 }
+
+export class UpdateUserDto {
+  username: string;
+  fullname: string;
+  biography: string | null;
+}

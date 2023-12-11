@@ -12,8 +12,10 @@ import {
   PROFILE_PICTURE_SIZE,
   USERNAME_REGEX,
 } from '@/utils/costants';
-import { UpdateProfilePictureDto } from '@/dtos/users.dto';
+import { UpdateProfilePictureDto, UpdateUserDto } from '@/dtos/users.dto';
 import { isEmpty } from '@/utils/util';
+import knex from '@databases';
+import { SqlException } from '@/exceptions/SqlException';
 
 class UserService {
   public async findAllUsers(): Promise<ApiUser[]> {
@@ -47,6 +49,59 @@ class UserService {
     }
 
     return apiUsers;
+  }
+
+  public async searchUsers(userId: number, query: string, limit: number, offset: number): Promise<ApiUser[]> {
+    const SqlSpName = 'Sp_SearchUsers';
+
+    var users: ApiUser[] = [];
+
+    const prmQuery = query && query.length > 0 ? query : null;
+    const prmLimit = limit !== undefined && limit > 0 ? limit : 10;
+    const prmOffset = offset !== undefined && offset > 0 ? offset : 0;
+
+    await knex
+      .raw(`CALL ${SqlSpName}(${userId}, ${prmQuery ? `'${prmQuery}'` : null}, ${prmLimit}, ${prmOffset});`)
+      .then(async result => {
+        if (
+          result &&
+          Array.isArray(result) &&
+          result.length > 0 &&
+          Array.isArray(result[0]) &&
+          result[0].length > 0 &&
+          Array.isArray(result[0][0]) &&
+          result[0][0].length > 0
+        ) {
+          let rUsers = result[0][0];
+          for (let i = 0; i < rUsers.length; i++) {
+            let userObject: User = rUsers[i];
+
+            let profilePicture: UserProfilePicture | null = null;
+
+            if (userObject.profilePictureUrl) {
+              profilePicture = {
+                url: userObject.profilePictureUrl,
+                width: userObject.profilePictureWidth || PROFILE_PICTURE_SIZE,
+                height: userObject.profilePictureHeight || PROFILE_PICTURE_SIZE,
+                blurHash: userObject.profilePictureBlurHash || null,
+              };
+            }
+
+            users.push({
+              id: userObject.id,
+              username: userObject.username,
+              fullname: userObject.fullname,
+              profilePicture: profilePicture,
+              isVerified: boolean(userObject.isVerified),
+            });
+          }
+        }
+      })
+      .catch(error => {
+        throw new SqlException(error);
+      });
+
+    return users;
   }
 
   public async findUserById(userId: number): Promise<User> {
@@ -145,6 +200,47 @@ class UserService {
     };
 
     return up;
+  }
+
+  public async updateUser(userId: number, data: UpdateUserDto): Promise<User> {
+    if (isEmpty(data)) throw new SnapSyncException(422, 'Unprocessable Entity');
+
+    const findOne = await Users.query().whereNotDeleted().findById(userId);
+    if (!findOne) throw new SnapSyncException(404, 'Not Found');
+
+    const trimmedUsername = data.username.toLocaleLowerCase().trim();
+    const trimmedFullName = data.fullname.trim();
+    var biography = data.biography ? data.biography.trim() : null;
+    if (biography && biography.length === 0) biography = null;
+
+    // Controllo se il nome utente è valido, in teoria non dovrebbe mai succedere, poichè ci dovrebbe essere la validazione nel controller
+    if (trimmedUsername.length < MIN_USERNAME_LENGTH || trimmedUsername.length > MAX_USERNAME_LENGTH || !USERNAME_REGEX.test(trimmedUsername)) {
+      throw new SnapSyncException(422, 'Unprocessable Entity', undefined, undefined, undefined, ['username']);
+    }
+
+    // Controllo se il nome e cognome è valido, in teoria non dovrebbe mai succedere, poichè ci dovrebbe essere la validazione nel controller
+    if (trimmedFullName.length < MIN_FULLNAME_LENGTH || trimmedFullName.length > MAX_FULLNAME_LENGTH || !FULLNAME_REGEX.test(trimmedFullName)) {
+      throw new SnapSyncException(422, 'Unprocessable Entity', undefined, undefined, undefined, ['fullname']);
+    }
+
+    // Controllo se la biografia è valida, in teoria non dovrebbe mai succedere, poichè ci dovrebbe essere la validazione nel controller
+    if (biography && biography.length > MAX_BIO_LENGTH) {
+      throw new SnapSyncException(422, 'Unprocessable Entity', undefined, undefined, undefined, ['biography']);
+    }
+
+    const alreadyExists = await Users.query().whereNotDeleted().andWhere('username', trimmedUsername).first();
+    if (alreadyExists && alreadyExists.id !== userId) {
+      throw new SnapSyncException(409, 'Conflict', undefined, undefined, undefined, ['username']);
+    }
+
+    const updatedUser = await Users.query().patchAndFetchById(userId, {
+      username: trimmedUsername,
+      fullname: trimmedFullName,
+      biography: biography,
+      updatedAt: new Date(),
+    });
+
+    return updatedUser;
   }
 
   public async updateUsername(userId: number, username: string): Promise<User> {

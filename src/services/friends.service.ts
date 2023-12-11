@@ -100,7 +100,7 @@ class FriendService {
     let userFriendsCount: number = 0;
 
     await knex
-      .raw(`CALL ${SqlSpName}(${userId}, ${prmQuery}, ${prmLimit}, ${prmOffset});`)
+      .raw(`CALL ${SqlSpName}(${userId}, ${prmQuery ? `'${prmQuery}'` : null}, ${prmLimit}, ${prmOffset});`)
       .then(async result => {
         if (
           result &&
@@ -197,13 +197,15 @@ class FriendService {
           let rUsers = result[0][0];
           for (let i = 0; i < rUsers.length; i++) {
             let userObject: {
+              a: number;
+              b: number;
               id: number;
               username: string;
               fullname: string;
               profilePictureUrl: string | null;
-              profilePictureBlurHash: string | null;
               profilePictureWidth: number | null;
               profilePictureHeight: number | null;
+              profilePictureBlurHash: string | null;
               biography: string | null;
               isVerified: boolean;
               count: number | null;
@@ -241,6 +243,84 @@ class FriendService {
     };
   }
 
+  public async findSuggestionsByUserId(
+    userId: number,
+    limit: number = 10,
+    offset: number = 0,
+  ): Promise<{
+    data: ApiUser[];
+  }> {
+    const SqlSpName = 'Sp_PeopleYouMayKnow';
+
+    var users: ApiUser[] = [];
+
+    const prmLimit = limit !== undefined && limit > 0 ? limit : 10;
+    const prmOffset = offset !== undefined && offset > 0 ? offset : 0;
+
+    await knex
+      .raw(`CALL ${SqlSpName}(${userId}, ${prmLimit}, ${prmOffset});`)
+      .then(async result => {
+        if (
+          result &&
+          Array.isArray(result) &&
+          result.length > 0 &&
+          Array.isArray(result[0]) &&
+          result[0].length > 0 &&
+          Array.isArray(result[0][0]) &&
+          result[0][0].length > 0
+        ) {
+          let rUsers = result[0][0];
+          for (let i = 0; i < rUsers.length; i++) {
+            let userObject: {
+              id: number;
+              username: string;
+              fullname: string;
+              profilePictureUrl: string | null;
+              profilePictureWidth: number | null;
+              profilePictureHeight: number | null;
+              profilePictureBlurHash: string | null;
+              biography: string | null;
+              isVerified: boolean;
+              contactNickname: string | null;
+              mutualFriends: number | null;
+            } = rUsers[i];
+            // if (i === 0 && userObject.count !== undefined && userObject.count !== null) userSuggestionsCount = userObject.count;
+
+            let profilePicture: UserProfilePicture | null = null;
+
+            if (userObject.profilePictureUrl) {
+              profilePicture = {
+                url: userObject.profilePictureUrl,
+                width: userObject.profilePictureWidth || PROFILE_PICTURE_SIZE,
+                height: userObject.profilePictureHeight || PROFILE_PICTURE_SIZE,
+                blurHash: userObject.profilePictureBlurHash || null,
+              };
+            }
+
+            users.push({
+              id: userObject.id,
+              username: userObject.username,
+              fullname: userObject.fullname,
+              profilePicture: profilePicture,
+              isVerified: boolean(userObject.isVerified),
+
+              biography: userObject.biography,
+
+              contactNickname: userObject && userObject.contactNickname ? userObject.contactNickname : undefined,
+              mutualFriends: userObject && userObject.mutualFriends && userObject.mutualFriends > 0 ? userObject.mutualFriends : undefined,
+            });
+          }
+        }
+      })
+      .catch(error => {
+        throw new SqlException(error);
+      });
+
+    return {
+      data: users,
+    };
+  }
+
   public async findReceivedFriendRequestsByUserId(
     userId: number,
     query: string | null = null,
@@ -261,7 +341,7 @@ class FriendService {
     let count: number = 0;
 
     await knex
-      .raw(`CALL ${SqlSpName}(${userId}, ${prmQuery}, ${prmLimit}, ${prmOffset});`)
+      .raw(`CALL ${SqlSpName}(${userId}, ${prmQuery ? `'${prmQuery}'` : null}, ${prmLimit}, ${prmOffset});`)
       .then(async result => {
         if (
           result &&
@@ -343,7 +423,7 @@ class FriendService {
     let count: number = 0;
 
     await knex
-      .raw(`CALL ${SqlSpName}(${userId}, ${prmQuery}, ${prmLimit}, ${prmOffset});`)
+      .raw(`CALL ${SqlSpName}(${userId}, ${prmQuery ? `'${prmQuery}'` : null}, ${prmLimit}, ${prmOffset});`)
       .then(async result => {
         if (
           result &&
@@ -416,7 +496,7 @@ class FriendService {
     const prmQuery = query && query.length > 0 ? query : null;
 
     await knex
-      .raw(`SELECT ${SqlFnName}(${userId}, ${prmQuery}) AS count;`)
+      .raw(`SELECT ${SqlFnName}(${userId}, ${prmQuery ? `'${prmQuery}'` : null}) AS count;`)
       .then(result => {
         if (
           result &&
@@ -449,7 +529,7 @@ class FriendService {
     const prmQuery = query && query.length > 0 ? query : null;
 
     await knex
-      .raw(`SELECT ${SqlFnName}(${userId}, ${prmQuery}) AS count;`)
+      .raw(`SELECT ${SqlFnName}(${userId}, ${prmQuery ? `'${prmQuery}'` : null}) AS count;`)
       .then(result => {
         if (
           result &&
@@ -657,186 +737,6 @@ class FriendService {
 
     return false;
   }
-
-  // public async findFriendsCountByUserId(userId: number, loggedUserId: number, query?: string): Promise<number> {
-  //   const fnName = 'Fn_GetFriendsCount';
-  //   var friendsCount = 0;
-  //   try {
-  //     const prmQuery = query && query.length > 0 ? query : null;
-  //     await knex
-  //       .raw(
-  //         `
-  //               SELECT ${fnName}(${userId}, ${loggedUserId}, ${prmQuery}}) AS count;
-  //           `,
-  //       )
-  //       .then(result => {
-  //         if (
-  //           result &&
-  //           Array.isArray(result) &&
-  //           result.length > 0 &&
-  //           Array.isArray(result[0]) &&
-  //           result[0].length > 0 &&
-  //           result[0][0].count !== undefined
-  //         ) {
-  //           friendsCount = result[0][0].count;
-  //         }
-  //       })
-  //       .catch(error => {
-  //         throw new SqlException(error);
-  //       });
-  //   } catch (error) {
-  //     throw error;
-  //   }
-  //   return friendsCount;
-  // }
-  // public async findFriendsByUserId(
-  //   userId: number,
-  //   loggedUserId: number,
-  //   query?: string,
-  //   limit?: number,
-  //   offset?: number,
-  // ): Promise<{
-  //   users: ApiUser[];
-  //   pagination: RoutePagination;
-  // }> {
-  //   const spName = 'Sp_GetFriends';
-  //   var users: ApiUser[] = [];
-  //   var pagination: RoutePagination = {
-  //     total: 0,
-  //     page: 0,
-  //     size: 0,
-  //     hasMore: false,
-  //   };
-  //   try {
-  //     const prmQuery = query && query.length > 0 ? query : null;
-  //     const prmLimit = limit !== undefined && limit > 0 ? limit : 10;
-  //     const prmOffset = offset !== undefined && offset > 0 ? offset : 0;
-  //     const queryToExecute = `
-  //               CALL ${spName}(${userId}, ${loggedUserId}, ${prmQuery}, ${prmLimit}, ${prmOffset});
-  //           `;
-  //     await knex
-  //       .raw(queryToExecute)
-  //       .then(async result => {
-  //         if (
-  //           result &&
-  //           Array.isArray(result) &&
-  //           result.length > 0 &&
-  //           Array.isArray(result[0]) &&
-  //           result[0].length > 0 &&
-  //           Array.isArray(result[0][0]) &&
-  //           result[0][0].length > 0
-  //         ) {
-  //           let rUsers = result[0][0];
-  //           const total = rUsers[0].total;
-  //           pagination.hasMore = total > prmOffset + prmLimit;
-  //           pagination.page = Math.floor(prmOffset / prmLimit) + 1;
-  //           pagination.size = prmLimit;
-  //           pagination.total = total;
-  //           for (let i = 0; i < rUsers.length; i++) {
-  //             let us = await new UserService().findApiUserById(rUsers[i].userId);
-  //             users.push(us);
-  //           }
-  //         }
-  //       })
-  //       .catch(error => {
-  //         throw new SqlException(error);
-  //       });
-  //   } catch (error) {
-  //     throw error;
-  //   }
-  //   return {
-  //     users,
-  //     pagination,
-  //   };
-  // }
-  // public async findMutualFriendsCountByUserId(userId: number, loggedUserId: number, query?: string): Promise<number> {
-  //   const fnName = 'Fn_GetMutualFriendsCount';
-  //   var mutualFriendsCount = 0;
-  //   try {
-  //     const prmQuery = query && query.length > 0 ? query : null;
-  //     await knex
-  //       .raw(
-  //         `
-  //               SELECT ${fnName}(${userId}, ${loggedUserId}, ${prmQuery}) AS count;
-  //           `,
-  //       )
-  //       .then(result => {
-  //         if (
-  //           result &&
-  //           Array.isArray(result) &&
-  //           result.length > 0 &&
-  //           Array.isArray(result[0]) &&
-  //           result[0].length > 0 &&
-  //           result[0][0].count !== undefined
-  //         ) {
-  //           mutualFriendsCount = result[0][0].count;
-  //         }
-  //       })
-  //       .catch(error => {
-  //         throw new SqlException(error);
-  //       });
-  //   } catch (error) {
-  //     throw error;
-  //   }
-  //   return mutualFriendsCount;
-  // }
-  // public async findMutualFriendsByUserId(
-  //   userId: number,
-  //   loggedUserId: number,
-  //   query?: string,
-  //   limit?: number,
-  //   offset?: number,
-  // ): Promise<{
-  //   users: ApiUser[];
-  //   pagination: RoutePagination;
-  // }> {
-  //   const spName = 'Sp_GetMutualFriends';
-  //   var users: ApiUser[] = [];
-  //   var pagination: RoutePagination = {
-  //     total: 0,
-  //     page: 0,
-  //     size: 0,
-  //     hasMore: false,
-  //   };
-  //   try {
-  //       const prmQuery = query && query.length > 0 ? query : null;
-  //       const prmLimit = limit !== undefined && limit > 0 ? limit : 10;
-  //       const prmOffset = offset !== undefined && offset > 0 ? offset : 0;
-  //       const queryToExecute = `
-  //               CALL ${spName}(${userId}, ${loggedUserId}, ${prmQuery}, ${prmLimit}, ${prmOffset});
-  //           `;
-  //       await knex.raw(queryToExecute).then(async result => {
-  //           if (
-  //               result &&
-  //               Array.isArray(result) &&
-  //               result.length > 0 &&
-  //               Array.isArray(result[0]) &&
-  //               result[0].length > 0 &&
-  //               Array.isArray(result[0][0]) &&
-  //               result[0][0].length > 0
-  //           ) {
-  //               let rUsers = result[0][0];
-  //               const total = rUsers[0].total;
-  //               pagination.hasMore = total > prmOffset + prmLimit;
-  //               pagination.page = Math.floor(prmOffset / prmLimit) + 1;
-  //               pagination.size = prmLimit;
-  //               pagination.total = total;
-  //               for (let i = 0; i < rUsers.length; i++) {
-  //                   let us = await new UserService().findApiUserById(rUsers[i].userId);
-  //                   users.push(us);
-  //               }
-  //           }
-  //       }).catch(error => {
-  //           throw new SqlException(error);
-  //       })
-  //   } catch (error) {
-  //       throw error;
-  //       }
-  //   return {
-  //     users,
-  //     pagination,
-  //   };
-  // }
 }
 
 export default FriendService;
