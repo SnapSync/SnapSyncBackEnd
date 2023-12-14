@@ -3,6 +3,7 @@ import UserService from '@services/users.service';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import BlockedUserService from '@/services/blocked_users.service';
 import { SnapSyncException } from '@/exceptions/SnapSyncException';
+import moment from 'moment';
 
 class UsersController {
   public userService = new UserService();
@@ -23,6 +24,18 @@ class UsersController {
       const apiUser = await this.userService.findApiUserById(req.user.id);
 
       res.status(200).json({ ...apiUser, message: 'ok' });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  public getMeCreatedAt = async (req: RequestWithUser, res: Response, next: NextFunction) => {
+    try {
+      const createdAt = req.user.createdAt;
+      // Transformo createdAt in numero di secondi
+      const createdAtInSeconds = moment(createdAt).unix();
+
+      res.status(200).json({ joinedAt: createdAtInSeconds, message: 'ok' });
     } catch (error) {
       next(error);
     }

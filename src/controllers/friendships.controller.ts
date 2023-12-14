@@ -39,6 +39,16 @@ class FriendshipsController {
     }
   };
 
+  public getUserFriendsCount = async (req: RequestWithUser, res: Response, nex: NextFunction) => {
+    try {
+      const count = await this.friendService.countFriends(req.user.id);
+
+      res.status(200).json({ count, message: 'ok' });
+    } catch (error) {
+      nex(error);
+    }
+  };
+
   public getMutualFriends = async (req: RequestWithUser, res: Response, nex: NextFunction) => {
     try {
       if (!req.params.userId) throw new SnapSyncException(400, 'Bad request');
@@ -123,6 +133,7 @@ class FriendshipsController {
         data: friendRequests.data,
         nextCursor: nextCursor,
         prevCursor: prevCursor,
+        total: friendRequests.total,
       });
     } catch (error) {
       nex(error);

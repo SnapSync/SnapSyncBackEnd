@@ -22,6 +22,8 @@ export class Users extends softDelete(Model) implements User {
   phoneNumber!: string; // In formato internazionale, esempio: +393401234567
 
   dateOfBirth!: Date; // Data di nascita
+  zodiacSignSymbol!: string; // Simbolo dello zodiaco, esempio: ♈
+  zodiacSignName!: string; // Nome dello zodiaco, esempio: Ariete
 
   biography!: string | null;
 

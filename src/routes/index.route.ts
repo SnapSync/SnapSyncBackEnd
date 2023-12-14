@@ -12,7 +12,7 @@ class IndexRoute implements Routes {
   }
 
   private initializeRoutes() {
-    this.router.get(`${this.path}/ping`, this.indexController.ping);
+    this.router.get(`${this.path}ping`, this.indexController.ping);
   }
 }
 

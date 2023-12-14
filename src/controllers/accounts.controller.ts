@@ -13,7 +13,7 @@ import {
   PROFILE_PICTURE_SIZE,
   USERNAME_REGEX,
 } from '@/utils/costants';
-import { NextFunction, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import * as yup from 'yup';
 import sizeOf from 'image-size';
 import sharp from 'sharp';
@@ -58,6 +58,47 @@ class AccountsController {
       const formData = this.generateWebFormData(updatedUser);
 
       res.status(200).json({ ...formData, message: 'ok' });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  public getFullNameRules = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      let rules = {
+        isNullable: false,
+        minLength: MIN_FULLNAME_LENGTH,
+        maxLength: MAX_FULLNAME_LENGTH,
+      };
+
+      res.status(200).json({ ...rules });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  public getUsernameRules = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      let rules = {
+        isNullable: false,
+        minLength: MIN_USERNAME_LENGTH,
+        maxLength: MAX_USERNAME_LENGTH,
+      };
+
+      res.status(200).json({ ...rules });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  public getBiographyRules = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      let rules = {
+        isNullable: true,
+        maxLength: MAX_BIO_LENGTH,
+      };
+
+      res.status(200).json({ ...rules });
     } catch (error) {
       next(error);
     }
@@ -132,8 +173,8 @@ class AccountsController {
       }
 
       // // calculate blurhash
-      const pixels = await sharp(resizedImage).raw().toBuffer();
-      // const blurHash = encode(new Uint8ClampedArray(pixels), PROFILE_PICTURE_SIZE, PROFILE_PICTURE_SIZE, 4, 4);
+      const { data: pixels, info: metadata } = await sharp(resizedImage).raw().ensureAlpha().toBuffer({ resolveWithObject: true });
+      const blurHash = encode(new Uint8ClampedArray(pixels), metadata.width, metadata.height, 4, 4);
 
       // // upload to s3
       let s3Key = `profile-pictures/${req.user.id}/${uuidv4()}`;
@@ -142,7 +183,7 @@ class AccountsController {
       // // update user profile picture
       const data: UpdateProfilePictureDto = {
         profilePictureUrl: url,
-        profilePictureBlurHash: null,
+        profilePictureBlurHash: blurHash,
         profilePictureWidth: PROFILE_PICTURE_SIZE,
         profilePictureHeight: PROFILE_PICTURE_SIZE,
       };
@@ -167,6 +208,21 @@ class AccountsController {
       await this.userService.removeProfilePicture(req.user.id);
 
       res.status(200).json({ profilePicture: null, message: 'ok' });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  public deleteAccount = async (req: RequestWithUser, res: Response, next: NextFunction) => {
+    try {
+      // const size = await sizeOf('./src/controllers/download.jpg');
+      // const { data, info } = await sharp('./src/controllers/download.jpg').raw().ensureAlpha().toBuffer({ resolveWithObject: true });
+      // const clamped = new Uint8ClampedArray(data);
+      // console.log(size.width * size.height * 4, clamped.length);
+      // const blurHash = encode(clamped, info.width, info.height, 4, 4);
+      // console.log(blurHash);
+      throw new SnapSyncException(501, 'Not Implemented');
+      res.status(200).json({ message: 'ok' });
     } catch (error) {
       next(error);
     }

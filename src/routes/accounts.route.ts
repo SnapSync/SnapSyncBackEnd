@@ -43,6 +43,10 @@ class AccountsRoute implements Routes {
     // this.router.post(`${this.path}/edit/fullname`, authMiddleware, this.accountsController.changeFullName);
     // this.router.post(`${this.path}/edit/biography`, authMiddleware, this.accountsController.changeBiography);
 
+    this.router.get(`${this.path}/fullname/rules`, this.accountsController.getFullNameRules);
+    this.router.get(`${this.path}/username/rules`, this.accountsController.getUsernameRules);
+    this.router.get(`${this.path}/biography/rules`, this.accountsController.getBiographyRules);
+
     this.router.post(
       `${this.path}/web_change_profile_pic`,
       authMiddleware,
@@ -50,6 +54,8 @@ class AccountsRoute implements Routes {
       this.accountsController.changeProfilePicture,
     );
     this.router.post(`${this.path}/web_remove_profile_pic`, authMiddleware, this.accountsController.removeProfilePicture);
+
+    this.router.get(`${this.path}/delete`, this.accountsController.deleteAccount);
   }
 }
 

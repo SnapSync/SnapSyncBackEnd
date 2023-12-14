@@ -33,6 +33,15 @@ class BlockedUserService {
     return { data: users, total: total };
   }
 
+  public async findBlockedUsersCountByUserId(userId: number): Promise<number> {
+    const findUser = await Users.query().whereNotDeleted().findById(userId);
+    if (!findUser) throw new SnapSyncException(404, 'Not Found');
+
+    const total = await BlockedUsers.query().whereNotDeleted().andWhere('userId', userId).resultSize();
+
+    return total;
+  }
+
   public async blockUser(data: CreateBlockedUserDto): Promise<BlockedUser> {
     if (isEmpty(data)) throw new SnapSyncException(400, 'Bad Request');
 

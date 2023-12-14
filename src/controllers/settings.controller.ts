@@ -57,6 +57,19 @@ class SettingsController {
     }
   };
 
+  public getUserBlockedUsersCount = async (req: RequestWithUser, res: Response, next: NextFunction) => {
+    try {
+      const total = await this.blockedUserService.findBlockedUsersCountByUserId(req.user.id);
+
+      res.status(200).json({
+        message: 'ok',
+        total: total,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   public updateAllowSyncContacts = async (req: RequestWithUser, res: Response, next: NextFunction) => {
     const validationSchema = yup.object().shape({
       allowSyncContacts: yup.boolean().required(),

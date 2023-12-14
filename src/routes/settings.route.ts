@@ -15,6 +15,7 @@ class SettingsRoute implements Routes {
   private initializeRoutes() {
     this.router.get(`${this.path}/web_info`, authMiddleware, this.settingsController.getWebInfo);
     this.router.get(`${this.path}/blocked_users`, authMiddleware, this.settingsController.getUserBlockedUsers);
+    this.router.get(`${this.path}/blocked_users/count`, authMiddleware, this.settingsController.getUserBlockedUsersCount);
 
     this.router.put(`${this.path}/allow_sync_contacts`, authMiddleware, this.settingsController.updateAllowSyncContacts);
   }

@@ -7,9 +7,27 @@ import { Friends } from '@/models/friends.model';
 import { StatusEnum } from '@/utils/enum';
 import knex from '@databases';
 import { SqlException } from '@/exceptions/SqlException';
-import { ApiUser, UserProfilePicture } from '@/interfaces/users.interface';
+import { ApiUser, User, UserProfilePicture, UserProfileZodiacSign } from '@/interfaces/users.interface';
 import { PROFILE_PICTURE_SIZE } from '@/utils/costants';
 import { boolean } from 'boolean';
+
+interface IMutualFriendTable extends User {
+  a: number;
+  b: number;
+  count: number;
+}
+
+interface IPeopleYouMayKnowTable extends User {
+  MeId: number;
+  PeopleYouMayKnowId: number;
+  CommonFriendId: number;
+  mutualFriends: number;
+}
+
+interface IRequetsTable extends User {
+  createdAt: Date;
+  count: number;
+}
 
 class FriendService {
   public async getFriendshipStatus(userId: number, loggedUserId: number): Promise<FriendshipStatus> {
@@ -121,6 +139,8 @@ class FriendService {
               profilePictureBlurHash: string | null;
               profilePictureWidth: number | null;
               profilePictureHeight: number | null;
+              zodiacSignSymbol: string;
+              zodiacSignName: string;
               biography: string | null;
               isVerified: boolean;
               acceptedAt: Date;
@@ -141,11 +161,18 @@ class FriendService {
               };
             }
 
+            let zodiacSign: UserProfileZodiacSign = {
+              name: userObject.zodiacSignName,
+              symbol: userObject.zodiacSignSymbol,
+            };
+
             users.push({
               id: userObject.id,
               username: userObject.username,
               fullname: userObject.fullname,
               profilePicture: profilePicture,
+              zodiacSign: zodiacSign,
+              biography: userObject.biography,
               isVerified: boolean(userObject.isVerified),
               streak: userObject.streak,
             });
@@ -196,20 +223,7 @@ class FriendService {
         ) {
           let rUsers = result[0][0];
           for (let i = 0; i < rUsers.length; i++) {
-            let userObject: {
-              a: number;
-              b: number;
-              id: number;
-              username: string;
-              fullname: string;
-              profilePictureUrl: string | null;
-              profilePictureWidth: number | null;
-              profilePictureHeight: number | null;
-              profilePictureBlurHash: string | null;
-              biography: string | null;
-              isVerified: boolean;
-              count: number | null;
-            } = rUsers[i];
+            let userObject: IMutualFriendTable = rUsers[i];
             if (i === 0 && userObject.count !== undefined && userObject.count !== null) userMutualFriendsCount = userObject.count;
 
             let profilePicture: UserProfilePicture | null = null;
@@ -223,11 +237,18 @@ class FriendService {
               };
             }
 
+            let zodiacSign: UserProfileZodiacSign = {
+              name: userObject.zodiacSignName,
+              symbol: userObject.zodiacSignSymbol,
+            };
+
             users.push({
               id: userObject.id,
               username: userObject.username,
               fullname: userObject.fullname,
               profilePicture: profilePicture,
+              zodiacSign: zodiacSign,
+              biography: userObject.biography,
               isVerified: boolean(userObject.isVerified),
             });
           }
@@ -271,19 +292,7 @@ class FriendService {
         ) {
           let rUsers = result[0][0];
           for (let i = 0; i < rUsers.length; i++) {
-            let userObject: {
-              id: number;
-              username: string;
-              fullname: string;
-              profilePictureUrl: string | null;
-              profilePictureWidth: number | null;
-              profilePictureHeight: number | null;
-              profilePictureBlurHash: string | null;
-              biography: string | null;
-              isVerified: boolean;
-              contactNickname: string | null;
-              mutualFriends: number | null;
-            } = rUsers[i];
+            let userObject: IPeopleYouMayKnowTable = rUsers[i];
             // if (i === 0 && userObject.count !== undefined && userObject.count !== null) userSuggestionsCount = userObject.count;
 
             let profilePicture: UserProfilePicture | null = null;
@@ -297,16 +306,22 @@ class FriendService {
               };
             }
 
+            let zodiacSign: UserProfileZodiacSign = {
+              name: userObject.zodiacSignName,
+              symbol: userObject.zodiacSignSymbol,
+            };
+
             users.push({
               id: userObject.id,
               username: userObject.username,
               fullname: userObject.fullname,
               profilePicture: profilePicture,
+              zodiacSign: zodiacSign,
               isVerified: boolean(userObject.isVerified),
 
               biography: userObject.biography,
 
-              contactNickname: userObject && userObject.contactNickname ? userObject.contactNickname : undefined,
+              // contactNickname: userObject && userObject.contactNickname ? userObject.contactNickname : undefined,
               mutualFriends: userObject && userObject.mutualFriends && userObject.mutualFriends > 0 ? userObject.mutualFriends : undefined,
             });
           }
@@ -354,20 +369,7 @@ class FriendService {
         ) {
           let rUsers = result[0][0];
           for (let i = 0; i < rUsers.length; i++) {
-            let userObject: {
-              id: number;
-              username: string;
-              fullname: string;
-              profilePictureUrl: string | null;
-              profilePictureBlurHash: string | null;
-              profilePictureWidth: number | null;
-              profilePictureHeight: number | null;
-              biography: string | null;
-              isVerified: boolean;
-              createdAt: Date;
-              nickname: string | null;
-              count: number | null;
-            } = rUsers[i];
+            let userObject: IRequetsTable = rUsers[i];
 
             if (i === 0 && userObject.count !== undefined && userObject.count !== null) count = userObject.count;
 
@@ -382,13 +384,20 @@ class FriendService {
               };
             }
 
+            let zodiacSign: UserProfileZodiacSign = {
+              name: userObject.zodiacSignName,
+              symbol: userObject.zodiacSignSymbol,
+            };
+
             users.push({
               id: userObject.id,
               username: userObject.username,
               fullname: userObject.fullname,
               isVerified: boolean(userObject.isVerified),
               profilePicture: profilePicture,
-              contactNickname: userObject.nickname,
+              zodiacSign: zodiacSign,
+              biography: userObject.biography,
+              // contactNickname: userObject.nickname,
             });
           }
         }
@@ -436,19 +445,7 @@ class FriendService {
         ) {
           let rUsers = result[0][0];
           for (let i = 0; i < rUsers.length; i++) {
-            let userObject: {
-              id: number;
-              username: string;
-              fullname: string;
-              profilePictureUrl: string | null;
-              profilePictureBlurHash: string | null;
-              profilePictureWidth: number | null;
-              profilePictureHeight: number | null;
-              biography: string | null;
-              isVerified: boolean;
-              createdAt: Date;
-              count: number | null;
-            } = rUsers[i];
+            let userObject: IRequetsTable = rUsers[i];
 
             if (i === 0 && userObject.count !== undefined && userObject.count !== null) count = userObject.count;
 
@@ -463,12 +460,19 @@ class FriendService {
               };
             }
 
+            let zodiacSign: UserProfileZodiacSign = {
+              name: userObject.zodiacSignName,
+              symbol: userObject.zodiacSignSymbol,
+            };
+
             users.push({
               id: userObject.id,
               username: userObject.username,
               fullname: userObject.fullname,
               isVerified: boolean(userObject.isVerified),
               profilePicture: profilePicture,
+              zodiacSign: zodiacSign,
+              biography: userObject.biography,
             });
           }
         }
@@ -481,6 +485,34 @@ class FriendService {
       data: users,
       total: count,
     };
+  }
+
+  public async countFriends(userId: number, query: string | null = null): Promise<number> {
+    const SqlFnName = 'Fn_GetUserFriendsCount';
+
+    var count = 0;
+
+    const prmQuery = query && query.length > 0 ? query : null;
+
+    await knex
+      .raw(`SELECT ${SqlFnName}(${userId}, ${prmQuery ? `'${prmQuery}'` : null}) AS count;`)
+      .then(result => {
+        if (
+          result &&
+          Array.isArray(result) &&
+          result.length > 0 &&
+          Array.isArray(result[0]) &&
+          result[0].length > 0 &&
+          result[0][0].count !== undefined
+        ) {
+          count = result[0][0].count;
+        }
+      })
+      .catch(error => {
+        throw new SqlException(error);
+      });
+
+    return count;
   }
 
   public async countReceivedFriendRequests(userId: number, query: string | null = null): Promise<number> {

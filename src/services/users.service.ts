@@ -1,4 +1,4 @@
-import { ApiUser, User, UserProfile, UserProfilePicture } from '@/interfaces/users.interface';
+import { ApiUser, User, UserProfile, UserProfilePicture, UserProfileZodiacSign } from '@/interfaces/users.interface';
 import { Users } from '@/models/users.model';
 import { boolean } from 'boolean';
 import { SnapSyncException } from '@/exceptions/SnapSyncException';
@@ -18,37 +18,10 @@ import knex from '@databases';
 import { SqlException } from '@/exceptions/SqlException';
 
 class UserService {
-  public async findAllUsers(): Promise<ApiUser[]> {
+  public async findAllUsers(): Promise<User[]> {
     const findAllUsers: User[] = await Users.query().whereNotDeleted();
 
-    let apiUsers: ApiUser[] = [];
-
-    for (let i = 0; i < findAllUsers.length; i++) {
-      const findUser = findAllUsers[i];
-
-      let profilePicture: UserProfilePicture | null = null;
-
-      if (findUser.profilePictureUrl) {
-        profilePicture = {
-          url: findUser.profilePictureUrl,
-          width: findUser.profilePictureWidth || PROFILE_PICTURE_SIZE,
-          height: findUser.profilePictureHeight || PROFILE_PICTURE_SIZE,
-          blurHash: findUser.profilePictureBlurHash || null,
-        };
-      }
-
-      const apiUser: ApiUser = {
-        id: findUser.id,
-        username: findUser.username,
-        fullname: findUser.fullname,
-        isVerified: boolean(findUser.isVerified),
-        profilePicture: profilePicture,
-      };
-
-      apiUsers.push(apiUser);
-    }
-
-    return apiUsers;
+    return findAllUsers;
   }
 
   public async searchUsers(userId: number, query: string, limit: number, offset: number): Promise<ApiUser[]> {
@@ -87,11 +60,17 @@ class UserService {
               };
             }
 
+            let zodiacSign: UserProfileZodiacSign = {
+              name: userObject.zodiacSignName,
+              symbol: userObject.zodiacSignSymbol,
+            };
+
             users.push({
               id: userObject.id,
               username: userObject.username,
               fullname: userObject.fullname,
               profilePicture: profilePicture,
+              zodiacSign: zodiacSign,
               isVerified: boolean(userObject.isVerified),
             });
           }
@@ -139,12 +118,18 @@ class UserService {
       };
     }
 
+    let zodiacSign: UserProfileZodiacSign = {
+      name: findOne.zodiacSignName,
+      symbol: findOne.zodiacSignSymbol,
+    };
+
     const apiUser: ApiUser = {
       id: findOne.id,
       username: findOne.username,
       fullname: findOne.fullname,
       isVerified: boolean(findOne.isVerified),
       profilePicture: profilePicture,
+      zodiacSign: zodiacSign,
       biography: findOne.biography,
     };
 

@@ -12,6 +12,8 @@ import { sha256 } from 'js-sha256';
 import { AuthTokens } from '@/models/auth_tokens.model';
 import { SnapSyncException } from '@/exceptions/SnapSyncException';
 import { UsersSettings } from '@/models/users_settings.model';
+import moment from 'moment';
+const zodiac = require('zodiac-signs')('en'); // Lo utilizzo per calcolare lo zodiaco
 
 class AuthService {
   public async loginByAuthUser(authUserId: number): Promise<LogInResponse> {
@@ -94,6 +96,31 @@ class AuthService {
       throw new SnapSyncException(409, 'Conflict', undefined, undefined, undefined, ['phoneNumber']);
     }
 
+    // Estraggo il giorno e il mese dalla data di nascita
+    const day = moment(findAuthUser.dateOfBirth).date();
+    const month = moment(findAuthUser.dateOfBirth).month() + 1; // Gennaio è 0
+
+    const zSign:
+      | number
+      | {
+          name: string; // Sarà in inglese
+          element: string;
+          stone: string;
+          symbol: string;
+          dateMin: string;
+          dateMax: string;
+        } = zodiac.getSignByDate({ day: day, month: month });
+
+    if (typeof zSign === 'number') {
+      // @see -> https://www.npmjs.com/package/zodiac-signs#error-management
+
+      // Day -> [1;31] or [1;30] or [1;29] -> -1
+      // Month -> [1;12] -> -1
+      // Name  -> zodiac signs' names -> -2
+      // Symbol -> zodiac signs' symbols -> -2
+      throw new SnapSyncException(400, 'Bad Request');
+    }
+
     const trx = await Users.startTransaction();
 
     // Sarà l'immagine di default
@@ -110,6 +137,8 @@ class AuthService {
         fullname: findAuthUser.fullname,
         phoneNumber: findAuthUser.phoneNumber,
         dateOfBirth: findAuthUser.dateOfBirth,
+        zodiacSignSymbol: zSign.symbol,
+        zodiacSignName: zSign.name,
       });
 
       // Elimito l'auth_user

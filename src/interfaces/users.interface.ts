@@ -12,6 +12,8 @@ export interface User {
   phoneNumber: string; // In formato internazionale, esempio: +393401234567
 
   dateOfBirth: Date; // Data di nascita
+  zodiacSignSymbol: string; // Simbolo dello zodiaco, esempio: ♈
+  zodiacSignName: string; // Nome dello zodiaco, esempio: Ariete
 
   biography: string | null;
 
@@ -41,16 +43,22 @@ export interface UserProfilePicture {
   blurHash: string | null;
 }
 
+export interface UserProfileZodiacSign {
+  name: string;
+  symbol: string;
+}
+
 export interface ApiUser {
   id: number;
   username: string;
   fullname: string;
   isVerified: boolean;
   profilePicture: UserProfilePicture | null;
+  zodiacSign: UserProfileZodiacSign;
 
   biography?: string | null;
 
-  contactNickname?: string;
+  // contactNickname?: string;
   mutualFriends?: number;
   streak?: number;
 }
