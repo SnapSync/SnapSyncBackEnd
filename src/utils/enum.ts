@@ -15,3 +15,9 @@ export enum SnapSyncErrorType {
   'SnapSyncInvalidFormatError' = 'SnapSyncInvalidFormatError', // Se il campo non supera il REGEX / formato
   'SnapSyncAlreadyExistsError' = 'SnapSyncAlreadyExistsError', // Se il campo esiste già nel database
 }
+
+export enum StatusEnum {
+  pending = 'pending',
+  accepted = 'accepted',
+  rejected = 'rejected',
+}

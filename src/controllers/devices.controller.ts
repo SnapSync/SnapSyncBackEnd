@@ -9,7 +9,8 @@ class DevicesController {
   public registerDevice = async (req: Request, res: Response, next: NextFunction) => {
     // Check if platformOd is 'ios' or 'android'
     const validationSchema = yup.object().shape({
-      platformOs: yup.string().required().oneOf(['ios', 'android']),
+      platformOs: yup.string().required().oneOf(['UNKNOWN', 'android', 'ios', 'windows', 'macos', 'web']),
+      deviceType: yup.string().required().oneOf(['UNKNOWN', 'PHONE', 'TABLET', 'TV', 'DESKTOP']),
     });
 
     try {

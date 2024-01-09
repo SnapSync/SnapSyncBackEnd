@@ -1,19 +1,19 @@
-import { NextFunction, Request, Response } from 'express';
-import { User, UserProfile } from '@interfaces/users.interface';
+import { NextFunction, Response } from 'express';
 import UserService from '@services/users.service';
 import { RequestWithUser } from '@/interfaces/auth.interface';
-import { HttpException } from '@/exceptions/HttpException';
 import BlockedUserService from '@/services/blocked_users.service';
+import { SnapSyncException } from '@/exceptions/SnapSyncException';
+import moment from 'moment';
 
 class UsersController {
   public userService = new UserService();
   public blockedUserService = new BlockedUserService();
 
-  public getUsers = async (req: Request, res: Response, next: NextFunction) => {
+  public getUsers = async (req: RequestWithUser, res: Response, next: NextFunction) => {
     try {
-      const findAllUsersData: User[] = await this.userService.findAllUser();
+      const users = await this.userService.findAllUsers();
 
-      res.status(200).json({ ...findAllUsersData });
+      res.status(200).json({ data: users, message: 'ok' });
     } catch (error) {
       next(error);
     }
@@ -23,33 +23,46 @@ class UsersController {
     try {
       const apiUser = await this.userService.findApiUserById(req.user.id);
 
-      res.status(200).json({ ...apiUser, message: 'ok' });
+      res.status(200).json({ result: apiUser, message: 'ok' });
     } catch (error) {
       next(error);
     }
   };
 
-  // public getUserById = async (req: RequestWithUser, res: Response, next: NextFunction) => {
-  //   try {
-  //     if (!req.params.userId) throw new HttpException(400, 'User id not set');
-  //     if (isNaN(parseInt(req.params.userId))) throw new HttpException(400, 'User id is not a number');
+  public getMeCreatedAt = async (req: RequestWithUser, res: Response, next: NextFunction) => {
+    try {
+      const createdAt = req.user.createdAt;
+      // Transformo createdAt in numero di secondi
+      const createdAtInSeconds = moment(createdAt).unix();
 
-  //     // Controllo se req.params.userId esiste
-  //     const userId = parseInt(req.params.userId);
-  //     const user = await this.userService.findUserById(userId);
-  //     if (!user) throw new HttpException(404, 'User not found');
+      res.status(200).json({ joinedAt: createdAtInSeconds, message: 'ok' });
+    } catch (error) {
+      next(error);
+    }
+  };
 
-  //     // Controllo che req.user.id non sia bloccato da req.params.userId
-  //     const isLoggedUser = await this.blockedUserService.isBlockedByUser(userId, req.user.id);
-  //     if (isLoggedUser) throw new HttpException(404, 'User not found');
+  public getUserById = async (req: RequestWithUser, res: Response, next: NextFunction) => {
+    try {
+      if (!req.params.userId) throw new SnapSyncException(400, 'Bad Request');
+      if (isNaN(parseInt(req.params.userId))) throw new SnapSyncException(400, 'Bad Request');
 
-  //     const up: UserProfile = await this.userService.findUserProfileById(userId, req.user.id);
+      const userId = parseInt(req.params.userId);
 
-  //     res.status(200).json({ ...up, message: 'ok' });
-  //   } catch (error) {
-  //     next(error);
-  //   }
-  // };
+      // Controllo se req.params.userId esiste
+      const user = await this.userService.findUserById(userId);
+      if (!user) throw new SnapSyncException(404, 'Not Found');
+
+      // Controllo che req.user.id non sia bloccato da req.params.userId
+      const isLoggedUserBlockedByUser = await this.blockedUserService.isBlockedByUser(user.id, req.user.id);
+      if (isLoggedUserBlockedByUser) throw new SnapSyncException(404, 'Not Found');
+
+      const up = await this.userService.findUserProfileById(userId, req.user.id);
+
+      res.status(200).json({ result: up, message: 'ok' });
+    } catch (error) {
+      next(error);
+    }
+  };
 }
 
 export default UsersController;

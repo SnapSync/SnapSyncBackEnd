@@ -6,16 +6,17 @@ export async function up(knex: Knex): Promise<void> {
 
     table.bigIncrements('id').unsigned().primary();
     table.string('username', 30).notNullable();
-    table.string('fullName', 64).notNullable();
+    table.string('fullname', 64).notNullable();
 
-    table.string('profilePicImageKey', 255).notNullable();
+    // table.string('profilePicImageKey', 255).notNullable();
+
+    table.string('profilePictureUrl', 255).nullable();
+    table.integer('profilePictureWidth').nullable();
+    table.integer('profilePictureHeight').nullable();
 
     table.string('phoneNumber', 20).notNullable(); // In formato internazionale, esempio: +393401234567
-    table.string('phoneNumberOnlyDigits').notNullable(); // Solo cifre, esempio: 393401234567
-    table.specificType('phoneNumberCountryIso2', 'char(2)').nullable().defaultTo(null)
-
-    table.decimal('latitude', 10, 8).nullable().defaultTo(null) // Indica la latitudine del luogo in cui l'utente si è registrato
-    table.decimal('longitude', 11, 8).nullable().defaultTo(null) // Indica la longitudine del luogo in cui l'utente si è registrato
+    // table.string('phoneNumberOnlyDigits').notNullable(); // Solo cifre, esempio: 393401234567
+    // table.specificType('phoneNumberCountryIso2', 'char(2)').nullable().defaultTo(null);
 
     table.date('dateOfBirth').notNullable(); // Data di nascita
 
@@ -32,7 +33,6 @@ export async function up(knex: Knex): Promise<void> {
     table.timestamp('shadowBannedAt').nullable().defaultTo(null);
     table.timestamp('shadowBannedUntil').nullable().defaultTo(null);
 
-    
     table.boolean('isPrivate').defaultTo(true);
 
     table.timestamp('createdAt').notNullable().defaultTo(knex.fn.now());

@@ -7,13 +7,14 @@ export async function up(knex: Knex): Promise<void> {
 
     table.bigInteger('userId').unsigned().index().references('id').inTable('users').onDelete('CASCADE').notNullable();
     table.bigInteger('friendId').unsigned().index().references('id').inTable('users').onDelete('CASCADE').notNullable();
-    table.bigInteger('friendshipStatusId').unsigned().index().references('id').inTable('friendship_statuses').onDelete('CASCADE').notNullable();
+
+    table.enum('status', ['pending', 'accepted', 'rejected']).defaultTo('pending').notNullable();
 
     table.timestamp('acceptedAt').nullable();
     table.timestamp('rejectedAt').nullable();
 
-    table.integer('snapSyncStreak').defaultTo(0)
-    table.timestamp('lastSnapSync').nullable();
+    table.integer('streak').defaultTo(0);
+    table.timestamp('lastSnapSyncAt').nullable();
 
     table.string('friendshipHash').notNullable();
 

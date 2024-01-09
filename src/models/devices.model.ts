@@ -1,6 +1,8 @@
 import { Model, ModelObject, Pojo } from 'objection';
 import objectionSoftDelete from 'objection-js-soft-delete';
 import { Device } from '@/interfaces/devices.interface';
+import PlatformOs from '@/types/platform_os.type';
+import DeviceType from '@/types/device_type.type';
 
 const softDelete = objectionSoftDelete({
   columnName: 'deletedAt',
@@ -11,11 +13,14 @@ const softDelete = objectionSoftDelete({
 export class Devices extends softDelete(Model) implements Device {
   id!: number;
   uuid!: string;
+
+  platformOs!: PlatformOs;
+  deviceType!: DeviceType;
+
   brand!: string | null;
   osName!: string | null;
   osVersion!: string | null;
   modelName!: string | null;
-  platformOs!: string | null;
 
   createdAt!: Date;
   updatedAt!: Date;

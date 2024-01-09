@@ -1,3 +1,1 @@
-export class CreateAuthUserDto {
-  deviceId: number;
-}
+export class CreateAuthUserDto {}

@@ -11,11 +11,9 @@ const softDelete = objectionSoftDelete({
 
 export class AuthUsers extends softDelete(Model) implements AuthUser {
   id!: number;
-  deviceId!: number;
   sessionId!: string;
   username!: string | null;
-  fullName!: string | null;
-  profilePicImageKey!: string | null;
+  fullname!: string | null;
   phoneNumber!: string | null;
   isPhoneNumberVerified!: boolean;
   dateOfBirth!: Date | null;

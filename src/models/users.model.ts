@@ -12,17 +12,18 @@ const softDelete = objectionSoftDelete({
 export class Users extends softDelete(Model) implements User {
   id!: number;
   username!: string;
-  fullName!: string;
-  profilePicImageKey!: string;
+  fullname!: string;
+
+  profilePictureUrl!: string | null;
+  profilePictureBlurHash!: string | null;
+  profilePictureWidth!: number | null;
+  profilePictureHeight!: number | null;
 
   phoneNumber!: string; // In formato internazionale, esempio: +393401234567
-  phoneNumberOnlyDigits!: string; // Solo cifre, esempio: 3401234567
-  phoneNumberCountryIso2!: string | null; // Codice ISO 3166-1 alpha-2 del paese, esempio: IT
-  
-  latitude!: number | null; // Indica la latitudine del luogo in cui l'utente si è registrato
-  longitude!: number | null; // Indica la longitudine del luogo in cui l'utente si è registrato
 
   dateOfBirth!: Date; // Data di nascita
+  zodiacSignSymbol!: string; // Simbolo dello zodiaco, esempio: ♈
+  zodiacSignName!: string; // Nome dello zodiaco, esempio: Ariete
 
   biography!: string | null;
 
@@ -51,14 +52,14 @@ export class Users extends softDelete(Model) implements User {
   $formatJson(json: Pojo): Pojo {
     json = super.$formatJson(json);
 
-    delete json.profilePicImageKey;
+    delete json.profilePictureUrl;
+    delete json.profilePictureWidth;
+    delete json.profilePictureHeight;
 
     delete json.phoneNumber;
-    delete json.phoneNumberOnlyDigits;
-    delete json.phoneNumberCountryIso2;
 
-    delete json.dateOfBirth;
-    
+    // delete json.dateOfBirth;
+
     json.isVerified = boolean(json.isVerified);
     delete json.verifiedAt;
 
