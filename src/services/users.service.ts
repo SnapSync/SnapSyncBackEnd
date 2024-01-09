@@ -83,6 +83,8 @@ class UserService {
     return users;
   }
 
+  // public async searchPreviewUsers(userId: number, query: string): Promise<ApiUser[]> {} // TODO
+
   public async findUserById(userId: number): Promise<User> {
     const findOne = await Users.query().whereNotDeleted().findById(userId);
     if (!findOne) throw new SnapSyncException(404, 'Not Found');

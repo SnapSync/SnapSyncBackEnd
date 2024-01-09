@@ -1,6 +1,8 @@
 import { CreateBlockedUserDto } from '@/dtos/blocked_users.dto';
 import { SnapSyncException } from '@/exceptions/SnapSyncException';
+import { CountResponse, InfiniteResponse } from '@/interfaces/api.interface';
 import { RequestWithUser } from '@/interfaces/auth.interface';
+import { ApiUser } from '@/interfaces/users.interface';
 import BlockedUserService from '@/services/blocked_users.service';
 import FriendService from '@/services/friends.service';
 import UserService from '@/services/users.service';
@@ -27,12 +29,16 @@ class FriendshipsController {
       const nextCursor: number | undefined = allPages > p.page ? p.page + 1 : undefined;
       const prevCursor: number | undefined = p.page > 1 ? p.page - 1 : undefined;
 
-      res.status(200).json({
-        message: 'ok',
+      let response: InfiniteResponse<ApiUser> = {
         data: friends.data,
         nextCursor: nextCursor,
         prevCursor: prevCursor,
         total: friends.total,
+      };
+
+      res.status(200).json({
+        message: 'ok',
+        result: response,
       });
     } catch (error) {
       nex(error);
@@ -43,7 +49,11 @@ class FriendshipsController {
     try {
       const count = await this.friendService.countFriends(req.user.id);
 
-      res.status(200).json({ count, message: 'ok' });
+      let cr: CountResponse = {
+        count: count,
+      };
+
+      res.status(200).json({ result: cr, message: 'ok' });
     } catch (error) {
       nex(error);
     }
@@ -77,12 +87,16 @@ class FriendshipsController {
       const nextCursor: number | undefined = allPages > p.page ? p.page + 1 : undefined;
       const prevCursor: number | undefined = p.page > 1 ? p.page - 1 : undefined;
 
-      res.status(200).json({
-        message: 'ok',
+      let response: InfiniteResponse<ApiUser> = {
         data: mutualFriends.data,
         nextCursor: nextCursor,
         prevCursor: prevCursor,
         total: mutualFriends.total,
+      };
+
+      res.status(200).json({
+        message: 'ok',
+        result: response,
       });
     } catch (error) {
       nex(error);
@@ -91,18 +105,7 @@ class FriendshipsController {
 
   public getSuggestions = async (req: RequestWithUser, res: Response, nex: NextFunction) => {
     try {
-      let p = retrivePaginationParamFromRequest(req);
-
-      // Calcolo il limit e l'offset
-      const limit = p.size;
-      const offset = (p.page - 1) * p.size;
-
-      const suggestions = await this.friendService.findSuggestionsByUserId(req.user.id, limit, offset);
-
-      // Calcolo il nextCursor/prevCursor per React-Query
-      // const allPages = Math.ceil(suggestions.total / limit);
-      // const nextCursor: number | undefined = allPages > p.page ? p.page + 1 : undefined;
-      // const prevCursor: number | undefined = p.page > 1 ? p.page - 1 : undefined;
+      const suggestions = await this.friendService.findSuggestionsByUserId(req.user.id);
 
       res.status(200).json({
         message: 'ok',
@@ -128,13 +131,14 @@ class FriendshipsController {
       const nextCursor: number | undefined = allPages > p.page ? p.page + 1 : undefined;
       const prevCursor: number | undefined = p.page > 1 ? p.page - 1 : undefined;
 
-      res.status(200).json({
-        message: 'ok',
+      let response: InfiniteResponse<ApiUser> = {
         data: friendRequests.data,
         nextCursor: nextCursor,
         prevCursor: prevCursor,
         total: friendRequests.total,
-      });
+      };
+
+      res.status(200).json(response);
     } catch (error) {
       nex(error);
     }
@@ -155,12 +159,14 @@ class FriendshipsController {
       const nextCursor: number | undefined = allPages > p.page ? p.page + 1 : undefined;
       const prevCursor: number | undefined = p.page > 1 ? p.page - 1 : undefined;
 
-      res.status(200).json({
-        message: 'ok',
+      let response: InfiniteResponse<ApiUser> = {
         data: friendRequests.data,
         nextCursor: nextCursor,
         prevCursor: prevCursor,
-      });
+        total: friendRequests.total,
+      };
+
+      res.status(200).json(response);
     } catch (error) {
       nex(error);
     }
@@ -170,7 +176,12 @@ class FriendshipsController {
     try {
       const count = await this.friendService.countReceivedFriendRequests(req.user.id);
 
-      res.status(200).json({ count, message: 'ok' });
+      let cr: CountResponse = {
+        count: count,
+        // message: 'ok',
+      };
+
+      res.status(200).json({ ...cr });
     } catch (error) {
       nex(error);
     }
@@ -180,7 +191,12 @@ class FriendshipsController {
     try {
       const count = await this.friendService.countSentFriendRequests(req.user.id);
 
-      res.status(200).json({ count, message: 'ok' });
+      let cr: CountResponse = {
+        count: count,
+        // message: 'ok',
+      };
+
+      res.status(200).json({ ...cr });
     } catch (error) {
       nex(error);
     }
@@ -205,7 +221,10 @@ class FriendshipsController {
       // Recupero il FriendshipStatus
       const fs = await this.friendService.getFriendshipStatus(findUser.id, req.user.id);
 
-      res.status(200).json(fs);
+      res.status(200).json({
+        result: fs,
+        message: 'ok',
+      });
     } catch (error) {
       nex(error);
     }
@@ -231,16 +250,27 @@ class FriendshipsController {
       const isUserBlocked = await this.blockedUserService.isBlockedByUser(req.user.id, findUser.id);
       if (isUserBlocked) throw new SnapSyncException(400, 'Bad request');
 
-      const fs = await this.friendService.getFriendshipStatus(findUser.id, req.user.id);
-      if (fs.isFriend) throw new SnapSyncException(400, 'Bad request'); // Se sono già amici
-      if (fs.outgoingRequest) throw new SnapSyncException(400, 'Bad request'); // Se ho già inviato una richiesta
-      if (fs.incomingRequest) throw new SnapSyncException(400, 'Bad request'); // Se ho già ricevuto una richiesta
+      var fs = await this.friendService.getFriendshipStatus(findUser.id, req.user.id);
 
-      await this.friendService.createFriendship(req.user.id, findUser.id);
+      // let fsResponse = fs;
+      // Se sono già amici o ho già inviato una richiesta o ho già ricevuto una richiesta, non faccio nulla, ma restituisco il FriendshipStatus attuale
+      if (!fs.isFriend && !fs.outgoingRequest && !fs.incomingRequest) {
+        await this.friendService.createFriendship(req.user.id, findUser.id);
+        fs = await this.friendService.getFriendshipStatus(findUser.id, req.user.id);
+      }
 
-      const updatedFriendshipStatus = await this.friendService.getFriendshipStatus(findUser.id, req.user.id);
+      // if (fs.isFriend) throw new SnapSyncException(400, 'Bad request'); // Se sono già amici
+      // if (fs.outgoingRequest) throw new SnapSyncException(400, 'Bad request'); // Se ho già inviato una richiesta
+      // if (fs.incomingRequest) throw new SnapSyncException(400, 'Bad request'); // Se ho già ricevuto una richiesta
 
-      res.status(200).json(updatedFriendshipStatus);
+      // await this.friendService.createFriendship(req.user.id, findUser.id);
+
+      // const updatedFriendshipStatus = await this.friendService.getFriendshipStatus(findUser.id, req.user.id);
+
+      res.status(200).json({
+        message: 'ok',
+        result: fs,
+      });
     } catch (error) {
       nex(error);
     }
@@ -266,14 +296,16 @@ class FriendshipsController {
       const isUserBlocked = await this.blockedUserService.isBlockedByUser(req.user.id, findUser.id);
       if (isUserBlocked) throw new SnapSyncException(400, 'Bad request');
 
-      const fs = await this.friendService.getFriendshipStatus(findUser.id, req.user.id);
-      if (!fs.incomingRequest) throw new SnapSyncException(400, 'Bad request'); // Se non ho ricevuto una richiesta
+      var fs = await this.friendService.getFriendshipStatus(findUser.id, req.user.id);
+      if (fs.incomingRequest) {
+        await this.friendService.acceptFriendship(req.user.id, findUser.id);
+        fs = await this.friendService.getFriendshipStatus(findUser.id, req.user.id);
+      }
 
-      await this.friendService.acceptFriendship(req.user.id, findUser.id);
-
-      const updatedFriendshipStatus = await this.friendService.getFriendshipStatus(findUser.id, req.user.id);
-
-      res.status(200).json(updatedFriendshipStatus);
+      res.status(200).json({
+        message: 'ok',
+        result: fs,
+      });
     } catch (error) {
       nex(error);
     }
@@ -299,14 +331,16 @@ class FriendshipsController {
       const isUserBlocked = await this.blockedUserService.isBlockedByUser(req.user.id, findUser.id);
       if (isUserBlocked) throw new SnapSyncException(400, 'Bad request');
 
-      const fs = await this.friendService.getFriendshipStatus(findUser.id, req.user.id);
-      if (!fs.incomingRequest) throw new SnapSyncException(400, 'Bad request'); // Se non ho ricevuto una richiesta
+      var fs = await this.friendService.getFriendshipStatus(findUser.id, req.user.id);
+      if (fs.incomingRequest) {
+        await this.friendService.rejectFriendship(req.user.id, findUser.id);
+        fs = await this.friendService.getFriendshipStatus(findUser.id, req.user.id);
+      }
 
-      await this.friendService.rejectFriendship(req.user.id, findUser.id);
-
-      const updatedFriendshipStatus = await this.friendService.getFriendshipStatus(findUser.id, req.user.id);
-
-      res.status(200).json(updatedFriendshipStatus);
+      res.status(200).json({
+        message: 'ok',
+        result: fs,
+      });
     } catch (error) {
       nex(error);
     }
@@ -331,16 +365,18 @@ class FriendshipsController {
       const isUserBlocked = await this.blockedUserService.isBlockedByUser(req.user.id, findUser.id);
       if (isUserBlocked) throw new SnapSyncException(400, 'Bad request');
 
-      const fs = await this.friendService.getFriendshipStatus(findUser.id, req.user.id);
+      var fs = await this.friendService.getFriendshipStatus(findUser.id, req.user.id);
 
       // Per poter eliminare un'amicizia, devono essere amici oppure req.user.id deve aver inviato una richiesta a req.params.userId
-      if (!fs.isFriend && !fs.outgoingRequest) throw new SnapSyncException(400, 'Bad request');
+      if (fs.isFriend || fs.outgoingRequest) {
+        await this.friendService.destroyFriendship(req.user.id, findUser.id);
+        fs = await this.friendService.getFriendshipStatus(findUser.id, req.user.id);
+      }
 
-      await this.friendService.destroyFriendship(req.user.id, findUser.id);
-
-      const updatedFriendshipStatus = await this.friendService.getFriendshipStatus(findUser.id, req.user.id);
-
-      res.status(200).json(updatedFriendshipStatus);
+      res.status(200).json({
+        message: 'ok',
+        result: fs,
+      });
     } catch (error) {
       nex(error);
     }

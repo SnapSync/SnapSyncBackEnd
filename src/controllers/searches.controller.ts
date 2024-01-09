@@ -1,5 +1,6 @@
 import { SnapSyncException } from '@/exceptions/SnapSyncException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
+import { ApiUser } from '@/interfaces/users.interface';
 import FriendService from '@/services/friends.service';
 import UserService from '@/services/users.service';
 import UserContactService from '@/services/users_contacts.service';
@@ -21,22 +22,33 @@ class SearchesController {
       const query = req.query.q.toLowerCase().trim();
       if (query.length < 1) throw new SnapSyncException(400, 'Bad request');
 
-      const friends = await this.friendService.findFriendsByUserId(req.user.id, query, 20, 0);
-      const sent = await this.friendService.findSentFriendRequestsByUserId(req.user.id, query, 20, 0);
-      const received = await this.friendService.findReceivedFriendRequestsByUserId(req.user.id, query, 20, 0);
-      const contacts = await this.userContactService.searchUserContacts(req.user.id, query, 20, 0);
-      const users = await this.userService.searchUsers(req.user.id, query, 20, 0);
+      // Se la query è minore di tre ritorno solo gli amici
+      const pageSizeFriends = query.length < 3 ? 20 : 5;
+
+      const friends = await this.friendService.findFriendsByUserId(req.user.id, query, pageSizeFriends, 0);
+      const sent = await this.friendService.findSentFriendRequestsByUserId(req.user.id, query, pageSizeFriends, 0);
+      const received = await this.friendService.findReceivedFriendRequestsByUserId(req.user.id, query, pageSizeFriends, 0);
+      // const contacts = await this.userContactService.searchUserContacts(req.user.id, query, 20, 0);
+      const users: ApiUser[] = [];
+      if (query.length >= 3) users.push(...(await this.userService.searchUsers(req.user.id, query, 20, 0)));
 
       let response = {
         friends: friends.data,
         sent: sent.data,
         received: received.data,
-        contacts: contacts,
+        // contacts: contacts,
         others: users,
         message: 'ok',
       };
 
       res.status(200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  public searchPreview = async (req: RequestWithUser, res: Response, next: NextFunction) => {
+    try {
     } catch (error) {
       next(error);
     }

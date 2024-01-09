@@ -199,7 +199,7 @@ class FriendService {
     data: ApiUser[];
     total: number;
   }> {
-    const SqlSpName = 'Sp_GetMutualFriends';
+    const SqlSpName = 'Sp_GetMutualFriendsTwo';
 
     var users: ApiUser[] = [];
 
@@ -599,35 +599,20 @@ class FriendService {
 
     // Controllo se sono amici
     let areFriends = await this.areFriends(userId, friendId);
-    if (areFriends) throw new SnapSyncException(400, 'Bad Request');
+    // if (areFriends) throw new SnapSyncException(400, 'Bad Request');
+    if (areFriends) return; // Se sono già amici non faccio nulla
 
     // Controllo se esiste una richiesta in entrata
     let fh = generateFriendshipHash(userId, friendId);
 
-    const incomingRequest = await Friends.query()
-      .whereNotDeleted()
-      .andWhere('status', StatusEnum.pending)
-      .andWhere('friendshipHash', fh)
-      .andWhere('friendId', userId)
-      .andWhere('userId', friendId)
-      .first();
-    if (incomingRequest) throw new SnapSyncException(400, 'Bad Request');
-
-    // Controllo se esiste una richiesta in uscita
-    const outgoingRequest = await Friends.query()
-      .whereNotDeleted()
-      .andWhere('status', StatusEnum.pending)
-      .andWhere('friendshipHash', fh)
-      .andWhere('friendId', friendId)
-      .andWhere('userId', userId)
-      .first();
-    if (outgoingRequest) throw new SnapSyncException(400, 'Bad Request');
+    // Controllo se esiste una richiesta in entrata / in uscita
+    const fRequest = await Friends.query().whereNotDeleted().andWhere('status', StatusEnum.pending).andWhere('friendshipHash', fh).first();
+    if (fRequest) return; // Se esiste già una richiesta non faccio nulla
 
     // Creo la richiesta
     await Friends.query().insert({
       userId: userId,
       friendId: friendId,
-      status: 'pending',
     });
   }
 
@@ -648,8 +633,8 @@ class FriendService {
     if (isBlocking) throw new SnapSyncException(400, 'Bad Request');
 
     // Controllo se sono amici
-    let areFriends = await this.areFriends(userId, friendId);
-    if (areFriends) throw new SnapSyncException(400, 'Bad Request');
+    // let areFriends = await this.areFriends(userId, friendId);
+    // if (areFriends) throw new SnapSyncException(400, 'Bad Request');
 
     // Controllo se esiste una richiesta pendente per findFriend fatta da findUser
     let fh = generateFriendshipHash(userId, friendId);
@@ -661,13 +646,13 @@ class FriendService {
       .andWhere('friendId', findUser.id)
       .andWhere('userId', findFriend.id)
       .first();
-    if (!incomingRequest) throw new SnapSyncException(400, 'Bad Request');
-
-    // Accetto la richiesta
-    await Friends.query().patchAndFetchById(incomingRequest.id, {
-      acceptedAt: new Date(),
-      status: 'accepted',
-    });
+    if (incomingRequest) {
+      // Aggiorno la richiesta
+      await Friends.query().patchAndFetchById(incomingRequest.id, {
+        acceptedAt: new Date(),
+        status: 'accepted',
+      });
+    }
   }
 
   public async rejectFriendship(userId: number, friendId: number): Promise<void> {
@@ -687,8 +672,8 @@ class FriendService {
     if (isBlocking) throw new SnapSyncException(400, 'Bad Request');
 
     // Controllo se sono amici
-    let areFriends = await this.areFriends(userId, friendId);
-    if (areFriends) throw new SnapSyncException(400, 'Bad Request');
+    // let areFriends = await this.areFriends(userId, friendId);
+    // if (areFriends) throw new SnapSyncException(400, 'Bad Request');
 
     // Controllo se esiste una richiesta pendente per findFriend fatta da findUser
     let fh = generateFriendshipHash(userId, friendId);
@@ -700,16 +685,15 @@ class FriendService {
       .andWhere('friendId', findUser.id)
       .andWhere('userId', findFriend.id)
       .first();
-    if (!incomingRequest) throw new SnapSyncException(400, 'Bad Request');
+    if (incomingRequest) {
+      // Aggiorno la richiesta
+      await Friends.query().patchAndFetchById(incomingRequest.id, {
+        rejectedAt: new Date(),
+        status: 'rejected',
 
-    // Rifiuto la richiesta
-    await Friends.query().patchAndFetchById(incomingRequest.id, {
-      rejectedAt: new Date(),
-      status: 'rejected',
-    });
-
-    // Elimino la richiesta tanto non è più necessaria
-    await Friends.query().deleteById(incomingRequest.id);
+        deletedAt: new Date(), // Soft delete, tanto non serve più
+      });
+    }
   }
 
   public async destroyFriendship(userId: number, friendId: number): Promise<void> {
@@ -729,18 +713,18 @@ class FriendService {
     if (isBlocking) throw new SnapSyncException(400, 'Bad Request');
 
     // Per poter eliminare un record devo essere amici oppure userId deve aver inviato una richiesta a friendId
-    let areFriends = await this.areFriends(userId, friendId);
+    // let areFriends = await this.areFriends(userId, friendId);
 
     const fh = generateFriendshipHash(userId, friendId);
-    const outgoingRequest = await Friends.query()
-      .whereNotDeleted()
-      .andWhere('status', StatusEnum.pending)
-      .andWhere('friendshipHash', fh)
-      .andWhere('friendId', friendId)
-      .andWhere('userId', userId)
-      .first();
+    // const outgoingRequest = await Friends.query()
+    //   .whereNotDeleted()
+    //   .andWhere('status', StatusEnum.pending)
+    //   .andWhere('friendshipHash', fh)
+    //   .andWhere('friendId', friendId)
+    //   .andWhere('userId', userId)
+    //   .first();
 
-    if (!areFriends && !outgoingRequest) throw new SnapSyncException(400, 'Bad Request');
+    // if (!areFriends && !outgoingRequest) throw new SnapSyncException(400, 'Bad Request');
 
     // Elimino la richiesta
     await Friends.query().delete().where('friendshipHash', fh);

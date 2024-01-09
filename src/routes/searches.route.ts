@@ -14,6 +14,7 @@ class SearchesRoute implements Routes {
 
   private initializeRoutes() {
     this.router.get(`${this.path}/search`, authMiddleware, this.seachesController.search);
+    this.router.get(`${this.path}/search/preview`, authMiddleware, this.seachesController.searchPreview);
   }
 }
 

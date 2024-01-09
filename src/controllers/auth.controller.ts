@@ -210,9 +210,13 @@ class AuthController {
       if (!authUser.dateOfBirth) throw new SnapSyncException(400, 'Bad Request');
       if (!authUser.phoneNumber) throw new SnapSyncException(400, 'Bad Request');
       if (!boolean(authUser.isPhoneNumberVerified)) throw new SnapSyncException(400, 'Bad Request');
-      if (authUser.username) throw new SnapSyncException(400, 'Bad Request');
+      // if (authUser.username) throw new SnapSyncException(400, 'Bad Request');
 
-      await this.authUserService.updateAuthUserUsername(authUser.id, req.body.username);
+      // const { username } = req.body;
+
+      // const trimmedUsername = username.trim().toLocaleLowerCase();
+
+      await this.authUserService.validateAuthUserUsername(authUser.id, req.body.username);
 
       res.status(200).json({ message: 'ok' });
     } catch (error) {
@@ -223,6 +227,7 @@ class AuthController {
   public signUp = async (req: Request, res: Response, next: NextFunction) => {
     const validationSchema = yup.object().shape({
       sessionId: yup.string().required(),
+      username: yup.string().required().min(MIN_USERNAME_LENGTH).max(MAX_USERNAME_LENGTH).matches(USERNAME_REGEX),
     });
 
     try {
@@ -234,9 +239,9 @@ class AuthController {
       if (!authUser.dateOfBirth) throw new SnapSyncException(400, 'Bad Request');
       if (!authUser.phoneNumber) throw new SnapSyncException(400, 'Bad Request');
       if (!boolean(authUser.isPhoneNumberVerified)) throw new SnapSyncException(400, 'Bad Request');
-      if (!authUser.username) throw new SnapSyncException(400, 'Bad Request');
+      // if (!authUser.username) throw new SnapSyncException(400, 'Bad Request');
 
-      const d = await this.authService.signUpByAuthUser(authUser.id);
+      const d = await this.authService.signUpByAuthUser(authUser.id, req.body.username);
 
       res.status(201).json({ data: d, message: 'ok' });
     } catch (error) {
@@ -246,15 +251,17 @@ class AuthController {
 
   public login = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      if (!req.params.userId) throw new SnapSyncException(400, 'Bad Request');
-      if (isNaN(parseInt(req.params.userId))) throw new SnapSyncException(400, 'Bad Request');
+      // if (!req.params.userId) throw new SnapSyncException(400, 'Bad Request');
+      // if (isNaN(parseInt(req.params.userId))) throw new SnapSyncException(400, 'Bad Request');
 
-      const userId = parseInt(req.params.userId);
+      const userId = req.body.userId;
+      if (!userId) throw new SnapSyncException(400, 'Bad Request');
+      if (isNaN(parseInt(userId))) throw new SnapSyncException(400, 'Bad Request');
 
       // TODO: Da rimuovere in produzione
       const t = await this.authService.login(userId);
 
-      res.status(200).json({ data: t, message: req.t('success.Ok') });
+      res.status(200).json({ message: 'ok', result: t });
     } catch (error) {
       next(error);
     }
@@ -274,7 +281,7 @@ class AuthController {
 
       const d = await this.authService.loginByAuthToken(authToken);
 
-      res.status(200).json({ data: d, message: 'ok' });
+      res.status(200).json({ result: d, message: 'ok' });
     } catch (error) {
       next(error);
     }

@@ -1,6 +1,7 @@
 import { SnapSyncException } from '@/exceptions/SnapSyncException';
+import { InfiniteResponse } from '@/interfaces/api.interface';
 import { RequestWithUser } from '@/interfaces/auth.interface';
-import { User } from '@/interfaces/users.interface';
+import { ApiUser, User } from '@/interfaces/users.interface';
 import { UserSetting } from '@/interfaces/users_settings.interface';
 import BlockedUserService from '@/services/blocked_users.service';
 import UserSettingService from '@/services/users_settings.service';
@@ -45,13 +46,14 @@ class SettingsController {
       const nextCursor: number | undefined = allPages > p.page ? p.page + 1 : undefined;
       const prevCursor: number | undefined = p.page > 1 ? p.page - 1 : undefined;
 
-      res.status(200).json({
-        message: 'ok',
+      let response: InfiniteResponse<ApiUser> = {
         data: data.data,
         nextCursor: nextCursor,
         prevCursor: prevCursor,
         total: data.total,
-      });
+      };
+
+      res.status(200).json(response);
     } catch (error) {
       next(error);
     }

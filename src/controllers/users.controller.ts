@@ -23,7 +23,7 @@ class UsersController {
     try {
       const apiUser = await this.userService.findApiUserById(req.user.id);
 
-      res.status(200).json({ ...apiUser, message: 'ok' });
+      res.status(200).json({ result: apiUser, message: 'ok' });
     } catch (error) {
       next(error);
     }
@@ -58,7 +58,7 @@ class UsersController {
 
       const up = await this.userService.findUserProfileById(userId, req.user.id);
 
-      res.status(200).json({ ...up, message: 'ok' });
+      res.status(200).json({ result: up, message: 'ok' });
     } catch (error) {
       next(error);
     }

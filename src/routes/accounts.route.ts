@@ -55,7 +55,7 @@ class AccountsRoute implements Routes {
     );
     this.router.post(`${this.path}/web_remove_profile_pic`, authMiddleware, this.accountsController.removeProfilePicture);
 
-    this.router.get(`${this.path}/delete`, this.accountsController.deleteAccount);
+    // this.router.get(`${this.path}/delete`, this.accountsController.deleteAccount);
   }
 }
 

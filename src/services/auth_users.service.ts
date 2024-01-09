@@ -140,6 +140,33 @@ class AuthUserService {
     return updatedAuthUser;
   }
 
+  public async validateAuthUserUsername(id: number, username: string): Promise<boolean> {
+    const findOne = await AuthUsers.query().whereNotDeleted().findById(id);
+    if (!findOne) throw new SnapSyncException(404, 'Not Found');
+
+    // Rimuoivo gli spazi prima e dopo e lo rende lowercase
+    const trimmedUsername = username.trim().toLocaleLowerCase();
+
+    /**
+     * MinLength: 3
+     * MaxLength: 30
+     * Only letters, numbers, and underscores
+     * Must start with a letter
+     * Unique
+     */
+
+    if (trimmedUsername.length < MIN_USERNAME_LENGTH || trimmedUsername.length > MAX_USERNAME_LENGTH || !USERNAME_REGEX.test(trimmedUsername)) {
+      throw new SnapSyncException(422, 'Unprocessable Entity', undefined, undefined, undefined, ['username']);
+    }
+
+    const alreadyExists = await Users.query().whereNotDeleted().andWhere('username', trimmedUsername).first();
+    if (alreadyExists) {
+      throw new SnapSyncException(409, 'Conflict', undefined, undefined, undefined, ['username']);
+    }
+
+    return true;
+  }
+
   public async updateAuthUserUsername(id: number, username: string): Promise<AuthUser> {
     const findOne = await AuthUsers.query().whereNotDeleted().findById(id);
     if (!findOne) throw new SnapSyncException(404, 'Not Found');

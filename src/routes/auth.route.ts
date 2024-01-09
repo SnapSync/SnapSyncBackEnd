@@ -26,7 +26,7 @@ class AuthRoute implements Routes {
     this.router.post(`${this.path}/auth_token/exchange`, this.authController.authTokenExchange);
     this.router.post(`${this.path}/refresh_token`, this.authController.refreshToken);
 
-    this.router.post(`${this.path}/login/:userId`, this.authController.login);
+    this.router.post(`${this.path}/login`, this.authController.login);
   }
 }
 

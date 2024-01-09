@@ -8,7 +8,7 @@ import morgan from 'morgan';
 import { Model } from 'objection';
 import swaggerJSDoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
-import { NODE_ENV, PORT, LOG_FORMAT, ORIGIN, CREDENTIALS } from '@config';
+import { NODE_ENV, PORT, LOG_FORMAT, ORIGIN, CREDENTIALS, SENTRY_DSN } from '@config';
 import knex from '@databases';
 import { Routes } from '@interfaces/routes.interface';
 import errorMiddleware from '@middlewares/error.middleware';
@@ -17,6 +17,25 @@ import { join } from 'path';
 import i18n from 'i18next';
 import FsBackend, { FsBackendOptions } from 'i18next-fs-backend';
 import * as i18nextMiddleware from 'i18next-http-middleware';
+import * as Sentry from '@sentry/node';
+import { ProfilingIntegration } from '@sentry/profiling-node';
+
+const app = express();
+
+Sentry.init({
+  dsn: SENTRY_DSN,
+  integrations: [
+    // enable HTTP calls tracing
+    new Sentry.Integrations.Http({ tracing: true }),
+    // enable Express.js middleware tracing
+    new Sentry.Integrations.Express({ app }),
+    new ProfilingIntegration(),
+  ],
+  // Performance Monitoring
+  tracesSampleRate: 1.0, //  Capture 100% of the transactions
+  // Set sampling rate for profiling - this is relative to tracesSampleRate
+  profilesSampleRate: 1.0,
+});
 
 i18n
   .use(FsBackend)
@@ -39,7 +58,7 @@ class App {
   public port: string | number;
 
   constructor(routes: Routes[]) {
-    this.app = express();
+    this.app = app;
     this.env = NODE_ENV || 'development';
     this.port = PORT || 3000;
 
@@ -68,6 +87,9 @@ class App {
   }
 
   private initializeMiddlewares() {
+    // The request handler must be the first middleware on the app
+    this.app.use(Sentry.Handlers.requestHandler() as express.RequestHandler);
+
     this.app.use(morgan(LOG_FORMAT, { stream }));
     this.app.use(cors({ origin: ORIGIN, credentials: CREDENTIALS }));
     this.app.use(hpp());
@@ -102,6 +124,9 @@ class App {
   }
 
   private initializeErrorHandling() {
+    // The error handler must be before any other error middleware and after all controllers
+    this.app.use(Sentry.Handlers.errorHandler() as express.ErrorRequestHandler);
+
     this.app.use(errorMiddleware);
   }
 }

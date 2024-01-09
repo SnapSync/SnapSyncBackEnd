@@ -13,6 +13,8 @@ import { AuthTokens } from '@/models/auth_tokens.model';
 import { SnapSyncException } from '@/exceptions/SnapSyncException';
 import { UsersSettings } from '@/models/users_settings.model';
 import moment from 'moment';
+import { Devices } from '@/models/devices.model';
+import { VexoTokens } from '@/models/vexo_tokens.model';
 const zodiac = require('zodiac-signs')('en'); // Lo utilizzo per calcolare lo zodiaco
 
 class AuthService {
@@ -43,6 +45,10 @@ class AuthService {
       // Elimino l'auth_user
       await AuthUsers.query(trx).deleteById(authUserId);
 
+      // Recupero il vexo_token
+      const vexoToken = await VexoTokens.query(trx).where('userId', findUserByPhoneNumber.id).first();
+      if (!vexoToken) throw new SnapSyncException(404, 'Not Found');
+
       // Creo l'authToken per loggarsi al prossimo avvio dell'app
       const selector = uuidv4();
       const plainTextValidator = uuidv4();
@@ -60,6 +66,7 @@ class AuthService {
       return {
         userId: findUserByPhoneNumber.id,
         tokenData: td,
+        vexoToken: vexoToken.token,
         accessToken: `${selector}:${plainTextValidator}`,
       };
     } catch (error) {
@@ -68,7 +75,7 @@ class AuthService {
     }
   }
 
-  public async signUpByAuthUser(authUserId: number): Promise<LogInResponse> {
+  public async signUpByAuthUser(authUserId: number, username: string): Promise<LogInResponse> {
     const findAuthUser = await AuthUsers.query().whereNotDeleted().findById(authUserId);
     if (!findAuthUser) throw new SnapSyncException(404, 'Not Found');
 
@@ -77,7 +84,7 @@ class AuthService {
     if (!findAuthUser.dateOfBirth) throw new SnapSyncException(400, 'Bad Request');
     if (!findAuthUser.phoneNumber) throw new SnapSyncException(400, 'Bad Request');
     if (!boolean(findAuthUser.isPhoneNumberVerified)) throw new SnapSyncException(400, 'Bad Request');
-    if (!findAuthUser.username) throw new SnapSyncException(400, 'Bad Request');
+    // if (!findAuthUser.username) throw new SnapSyncException(400, 'Bad Request');
 
     const phoneNumberResult = phone(findAuthUser.phoneNumber);
     if (!phoneNumberResult.isValid) {
@@ -85,7 +92,8 @@ class AuthService {
     }
 
     // Controllo se esiste già un utente con lo stesso username
-    const findUserByUsername = await Users.query().whereNotDeleted().andWhere('username', findAuthUser.username).first();
+    const trimmedUsername = username.trim().toLocaleLowerCase();
+    const findUserByUsername = await Users.query().whereNotDeleted().andWhere('username', trimmedUsername).first();
     if (findUserByUsername) {
       throw new SnapSyncException(409, 'Conflict', undefined, undefined, undefined, ['username']);
     }
@@ -133,7 +141,7 @@ class AuthService {
     try {
       // Creo l'utente
       const createdUser = await Users.query(trx).insertAndFetch({
-        username: findAuthUser.username,
+        username: trimmedUsername,
         fullname: findAuthUser.fullname,
         phoneNumber: findAuthUser.phoneNumber,
         dateOfBirth: findAuthUser.dateOfBirth,
@@ -148,6 +156,14 @@ class AuthService {
       await UsersSettings.query(trx).insert({
         userId: createdUser.id,
         allowSyncContacts: false,
+      });
+
+      // Creo il vexo_token
+      const uuid = uuidv4();
+      const token = sha256(uuid);
+      await VexoTokens.query(trx).insert({
+        userId: createdUser.id,
+        token: token,
       });
 
       // Creo l'authToken per loggarsi al prossimo avvio dell'app
@@ -170,6 +186,7 @@ class AuthService {
       return {
         userId: createdUser.id,
         tokenData: td,
+        vexoToken: token,
         accessToken: `${selector}:${plainTextValidator}`,
       };
     } catch (error) {
@@ -200,6 +217,10 @@ class AuthService {
     // Controllo se l'utente è stato bannato
     if (boolean(findUser.isBanned)) throw new SnapSyncException(403, 'Forbidden', undefined, SnapSyncErrorType.SnapSyncUserBannedError);
 
+    // Recupero il vexo_token
+    const vexoToken = await VexoTokens.query().where('userId', findUser.id).first();
+    if (!vexoToken) throw new SnapSyncException(404, 'Not Found');
+
     const td = this.createToken(findUser);
 
     // Aggiorno il validator
@@ -214,19 +235,39 @@ class AuthService {
     return {
       userId: findUser.id,
       tokenData: td,
+      vexoToken: vexoToken.token,
       accessToken: `${selector}:${newPlainTextValidator}`,
     };
   }
 
-  public async login(id: number): Promise<TokenData> {
+  public async login(id: number): Promise<LogInResponse> {
     const user = await Users.query().whereNotDeleted().findById(id);
-    if (!user) new SnapSyncException(401, 'Unauthorized');
+    if (!user) throw new SnapSyncException(401, 'Unauthorized');
 
     if (boolean(user.isBanned)) throw new SnapSyncException(403, 'Forbidden', undefined, SnapSyncErrorType.SnapSyncUserBannedError);
 
+    const vexoToken = await VexoTokens.query().where('userId', user.id).first();
+    if (!vexoToken) throw new SnapSyncException(404, 'Not Found');
+
     const tokenData = this.createToken(user);
 
-    return tokenData;
+    // Creo l'authToken per loggarsi al prossimo avvio dell'app
+    const selector = uuidv4();
+    const plainTextValidator = uuidv4();
+    const hashedValidator = sha256(plainTextValidator);
+
+    await AuthTokens.query().insert({
+      userId: user.id,
+      selector: selector,
+      hashedValidator: hashedValidator,
+    });
+
+    return {
+      tokenData,
+      vexoToken: vexoToken.token,
+      userId: user.id,
+      accessToken: `${selector}:${plainTextValidator}`,
+    };
   }
 
   public async refreshToken(token: string): Promise<TokenData> {

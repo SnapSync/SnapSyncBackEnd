@@ -27,6 +27,7 @@ export interface RequestWithUser extends Request {
 
 export interface LogInResponse {
   userId: number;
+  vexoToken: string;
   tokenData: TokenData;
   accessToken: string; // selector:validator
 }

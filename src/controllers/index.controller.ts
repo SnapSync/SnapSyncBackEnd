@@ -47,6 +47,14 @@ class IndexController {
       next(error);
     }
   };
+
+  public debugSentry = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      throw new Error('Debug Sentry');
+    } catch (error) {
+      next(error);
+    }
+  };
 }
 
 export default IndexController;
